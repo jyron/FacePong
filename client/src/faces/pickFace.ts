@@ -6,6 +6,7 @@ import { Platform, ActionSheetIOS, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { cutoutFace } from './segment';
+import { track } from '../analytics';
 
 export type PickSource = 'library' | 'camera';
 
@@ -61,7 +62,9 @@ export function chooseFaceSource(
   const run = async (source: PickSource) => {
     onStart?.();
     try {
-      onResult(await pickFace(source));
+      const face = await pickFace(source);
+      if (face) track.faceSelected(source);
+      onResult(face);
     } catch {
       onResult(null);
     }

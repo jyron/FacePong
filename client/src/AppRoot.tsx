@@ -13,6 +13,7 @@ import { ShareScreen } from './screens/ShareScreen';
 import { FriendMenu } from './screens/FriendMenu';
 import { OnlineGame, type OnlineMode } from './screens/OnlineGame';
 import { initSfx } from './sfx/sfx';
+import { track } from './analytics';
 import { C } from './theme/tokens';
 import { TARGET_SCORE, type Slot } from '../shared/constants';
 import type { Mode } from '../shared/protocol';
@@ -79,8 +80,22 @@ export function AppRoot() {
   const startCpuMatch = () => {
     resetMatch();
     setOpponent(CPU_NAME);
+    track.gameStarted('cpu');
     setRoute('round');
   };
+
+  // One game_finished per CPU match, fired when the match screen is reached.
+  useEffect(() => {
+    if (route !== 'match') return;
+    track.gameFinished({
+      mode: 'cpu',
+      won: scoresRef.current.p1 >= scoresRef.current.p2,
+      myScore: scoresRef.current.p1,
+      oppScore: scoresRef.current.p2,
+      topRally: statsRef.current.topRally,
+      durationS: Math.floor((Date.now() - startedAt.current) / 1000),
+    });
+  }, [route]);
 
   const beginRally = (serveToward: Slot) => {
     engine.startCpu(serveToward);
@@ -143,6 +158,7 @@ export function AppRoot() {
           opponentName={opponent}
           onQuit={() => {
             engine.stop();
+            track.gameQuit('cpu');
             setRoute('start');
           }}
         />

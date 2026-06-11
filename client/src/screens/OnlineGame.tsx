@@ -27,6 +27,7 @@ import { useNetGame } from '../net/useNetGame';
 import { joinQuick, createFriend, joinFriend, makeFriendCode } from '../net/client';
 import { C, FONT } from '../theme/tokens';
 import { sfx } from '../sfx/sfx';
+import { track } from '../analytics';
 import { COURT, type Slot } from '../../shared/constants';
 
 export type OnlineMode = 'quick' | 'friend-create' | 'friend-join';
@@ -68,6 +69,37 @@ export function OnlineGame({
   });
 
   const matchFaces = useMemo(() => ({ p1: faces.p1, p2: oppFace }), [faces.p1, oppFace]);
+
+  // Analytics: one game_started per online session, one online_match_found per
+  // opponent pairing, one game_finished per completed match. Refs guard against
+  // re-fires when status flaps (e.g. opponent leaves -> back to waiting).
+  const trackedFound = useRef(false);
+  const trackedFinish = useRef(false);
+  useEffect(() => {
+    track.gameStarted(mode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (net.status === 'live' && !trackedFound.current) {
+      trackedFound.current = true;
+      track.onlineMatchFound(mode);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [net.status]);
+  useEffect(() => {
+    if (net.phase === 'match' && !trackedFinish.current) {
+      trackedFinish.current = true;
+      track.gameFinished({
+        mode,
+        won: (net.winnerSlot || (net.scores.p1 >= net.scores.p2 ? 'p1' : 'p2')) === 'p1',
+        myScore: net.scores.p1,
+        oppScore: net.scores.p2,
+        topRally: net.topRally,
+        durationS: Math.floor((Date.now() - startedAt.current) / 1000),
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [net.phase]);
 
   // Audio cues for the server-driven phases (the local overlays below don't
   // mount/unmount per number, so tick on countdown changes and beep on points).
@@ -122,7 +154,10 @@ export function OnlineGame({
               <NeonButton
                 label="SHARE CODE"
                 variant="cyan"
-                onPress={() => Share.share({ message: `Play me in FacePong! Join code: ${hostCode}` }).catch(() => {})}
+                onPress={() => {
+                  track.friendCodeShared();
+                  Share.share({ message: `Play me in FacePong! Join code: ${hostCode}` }).catch(() => {});
+                }}
               />
               <NeonButton label="COPY CODE" variant="ghost" small onPress={() => Clipboard.setStringAsync(hostCode)} />
             </View>
@@ -177,6 +212,7 @@ export function OnlineGame({
         rally={net.rally}
         opponentName={oppName}
         onQuit={() => {
+          track.gameQuit(mode);
           net.leave();
           onExit();
         }}

@@ -6,6 +6,7 @@ import { FaceCoin } from '../components/FaceCoin';
 import { ScoreChip } from '../components/ScoreChip';
 import { useFaces } from '../faces/FaceStore';
 import { C, FONT } from '../theme/tokens';
+import { track } from '../analytics';
 import type { Slot } from '../../shared/constants';
 
 const TARGETS = [
@@ -34,8 +35,10 @@ export function ShareScreen({
   const [copied, setCopied] = useState(false);
   const url = `facepong.gg/r/${code}`;
 
-  const openShare = () =>
+  const openShare = () => {
+    track.resultShared();
     Share.share({ message: `🏓 ${winnerName} won FacePong ${scores.p1}–${scores.p2}! Play me: ${url}` }).catch(() => {});
+  };
   const copy = async () => {
     await Clipboard.setStringAsync(url);
     setCopied(true);

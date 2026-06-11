@@ -6,6 +6,7 @@ import { Room, Client } from '@colyseus/core';
 import { PongState, Player } from '../schema/PongState';
 import { createEngineState, serve, step, type EngineState } from '../../../client/shared/engine';
 import { COURT, TARGET_SCORE, clampPaddleX, type Slot } from '../../../client/shared/constants';
+import { track } from '../analytics';
 
 const CX = COURT.W / 2;
 
@@ -16,6 +17,12 @@ export class PongRoom extends Room<PongState> {
   private targets: Record<string, number> = {};
   private faces: Partial<Record<Slot, string>> = {};
   private pointTimer: { clear: () => void } | undefined;
+  private matchStartedAt = 0;
+
+  // 'friend' for code rooms, 'quick' for matchmaking (code "")
+  private matchMode() {
+    return this.state.code ? 'friend' : 'quick';
+  }
 
   onCreate(options: { mode?: string; code?: string } = {}) {
     this.setState(new PongState());
@@ -70,6 +77,13 @@ export class PongRoom extends Room<PongState> {
   }
 
   onLeave(client: Client) {
+    // A leave during an unfinished match is an abandonment (quit/disconnect).
+    if (this.state.phase !== 'waiting' && this.state.phase !== 'match') {
+      track('online_match_abandoned', {
+        mode: this.matchMode(),
+        duration_s: Math.floor((Date.now() - this.matchStartedAt) / 1000),
+      });
+    }
     const leaver = this.state.players.get(client.sessionId);
     if (leaver) delete this.faces[leaver.slot as Slot];
     this.state.players.delete(client.sessionId);
@@ -83,6 +97,8 @@ export class PongRoom extends Room<PongState> {
 
   // ---- flow ----
   private startMatch() {
+    this.matchStartedAt = Date.now();
+    track('online_match_started', { mode: this.matchMode() });
     this.state.players.forEach((p) => (p.score = 0));
     this.state.round = 1;
     this.state.topRally = 0;
@@ -164,6 +180,14 @@ export class PongRoom extends Room<PongState> {
       if (over) {
         this.state.phase = 'match';
         this.state.winnerSlot = slot;
+        track('online_match_completed', {
+          mode: this.matchMode(),
+          score_p1: p1?.score ?? 0,
+          score_p2: p2?.score ?? 0,
+          top_rally: this.state.topRally,
+          rounds: this.state.round,
+          duration_s: Math.floor((Date.now() - this.matchStartedAt) / 1000),
+        });
       } else {
         this.state.round += 1;
         this.beginCountdown(slot === 'p1' ? 'p2' : 'p1');
