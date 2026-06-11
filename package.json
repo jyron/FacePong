@@ -1,0 +1,11 @@
+{
+  "name": "facepong",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm --prefix server ci && npm --prefix server run build",
+    "start": "npm --prefix server start"
+  }
+}
