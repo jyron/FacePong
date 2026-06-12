@@ -168,11 +168,18 @@ export function useNetGame(opts: {
           // my paddle is at the bottom) and pulse that hit counter.
           if (state.rally > prevRally.current) {
             const bottom = by >= CY;
-            runOnUI((b: boolean) => {
+            runOnUI((b: boolean, bx2: number, by2: number) => {
               'worklet';
               if (b) p1Hit.value += 1;
               else p2Hit.value += 1;
-            })(bottom);
+              // Snap the rendered ball to the post-bounce server position: the
+              // lerp trails the target by a few frames, and across a velocity
+              // reversal that trailing rounds the corner — the ball visibly
+              // mushes into the paddle instead of bouncing crisply. The hit's
+              // pop/ring/confetti land on the same frame, masking the snap.
+              ballX.value = bx2;
+              ballY.value = by2;
+            })(bottom, bx, by);
           }
           prevRally.current = state.rally;
           runOnUI((r: number) => {
@@ -205,9 +212,12 @@ export function useNetGame(opts: {
           if (active) setNet((n) => ({ ...n, status: 'error', error: 'Disconnected' }));
         });
 
+        // 60Hz to match the server tick: the server bounces the ball off ITS
+        // copy of the paddle, so stale input makes contact look offset from
+        // the locally-predicted (instant) paddle.
         inputTimer = setInterval(() => {
           roomRef.current?.send('input', { x: inputX.value });
-        }, 1000 / 30);
+        }, 1000 / 60);
       } catch (e: any) {
         if (active) setNet((n) => ({ ...n, status: 'error', error: e?.message || 'Could not connect' }));
       }

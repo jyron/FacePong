@@ -50,6 +50,11 @@ export class PongRoom extends Room<PongState> {
     });
 
     this.setSimulationInterval(() => this.update(), 1000 / 60);
+    // Patch at the simulation rate, not Colyseus' 20Hz default: clients render
+    // the ball by lerping toward the last patched position, and 50ms-stale
+    // targets make the lerp visibly round the corner at every paddle bounce.
+    // The state is a handful of floats, so 60Hz patches cost almost nothing.
+    this.setPatchRate(1000 / 60);
   }
 
   onJoin(client: Client, options: { name?: string } = {}) {
