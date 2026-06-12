@@ -18,8 +18,8 @@ export const BOT_Y = 676; // bottom paddle center y (local player)
 export const WALL_PAD = 6; // ball inset from left/right walls
 export const PADDLE_MARGIN = PADDLE_R + 8; // clamp for paddle center x
 
-export const MAX_SPEED = 9.2; // max ball speed (units/tick)
-export const RALLY_RAMP = 1.045; // ball speeds up this much per paddle hit (to MAX_SPEED)
+export const MAX_SPEED = 10.6; // max ball speed (units/tick)
+export const RALLY_RAMP = 1.06; // ball speeds up this much per paddle hit (to MAX_SPEED)
 export const SERVE_VY = 6.2; // vertical serve speed
 export const SERVE_VX_SPREAD = 2.4; // random horizontal spread on serve
 export const PADDLE_BOUNCE = 5.2; // how much paddle hit offset bends vx

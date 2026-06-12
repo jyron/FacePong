@@ -58,13 +58,23 @@ export function useNetGame(opts: {
   const t2x = useSharedValue(CX);
   const t3x = useSharedValue(CX);
   const t4x = useSharedValue(CX);
+  const t5x = useSharedValue(CX);
+  const t6x = useSharedValue(CX);
+  const t7x = useSharedValue(CX);
+  const t8x = useSharedValue(CX);
+  const t9x = useSharedValue(CX);
   const t0y = useSharedValue(CY);
   const t1y = useSharedValue(CY);
   const t2y = useSharedValue(CY);
   const t3y = useSharedValue(CY);
   const t4y = useSharedValue(CY);
-  const trailX = [t0x, t1x, t2x, t3x, t4x];
-  const trailY = [t0y, t1y, t2y, t3y, t4y];
+  const t5y = useSharedValue(CY);
+  const t6y = useSharedValue(CY);
+  const t7y = useSharedValue(CY);
+  const t8y = useSharedValue(CY);
+  const t9y = useSharedValue(CY);
+  const trailX = [t0x, t1x, t2x, t3x, t4x, t5x, t6x, t7x, t8x, t9x];
+  const trailY = [t0y, t1y, t2y, t3y, t4y, t5y, t6y, t7y, t8y, t9y];
   const p1Hit = useSharedValue(0);
   const p2Hit = useSharedValue(0);
   const wallHit = useSharedValue(0);
@@ -105,6 +115,11 @@ export function useNetGame(opts: {
       ballX.value < BALL_R + WALL_PAD + 12 || ballX.value > COURT.W - BALL_R - WALL_PAD - 12;
     if (nearWall && !inWallZone.value) wallHit.value += 1;
     inWallZone.value = nearWall;
+    t9x.value = t8x.value; t9y.value = t8y.value;
+    t8x.value = t7x.value; t8y.value = t7y.value;
+    t7x.value = t6x.value; t7y.value = t6y.value;
+    t6x.value = t5x.value; t6y.value = t5y.value;
+    t5x.value = t4x.value; t5y.value = t4y.value;
     t4x.value = t3x.value; t4y.value = t3y.value;
     t3x.value = t2x.value; t3y.value = t2y.value;
     t2x.value = t1x.value; t2y.value = t1y.value;
@@ -158,7 +173,9 @@ export function useNetGame(opts: {
               ballX.value = bx2;
               ballY.value = by2;
               t0x.value = bx2; t1x.value = bx2; t2x.value = bx2; t3x.value = bx2; t4x.value = bx2;
+              t5x.value = bx2; t6x.value = bx2; t7x.value = bx2; t8x.value = bx2; t9x.value = bx2;
               t0y.value = by2; t1y.value = by2; t2y.value = by2; t3y.value = by2; t4y.value = by2;
+              t5y.value = by2; t6y.value = by2; t7y.value = by2; t8y.value = by2; t9y.value = by2;
               inWallZone.value = true; // re-arm wall blip detection quietly
             }
           })(bx, by, ox, snap);

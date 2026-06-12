@@ -86,14 +86,24 @@ export function usePongEngine(onScore: (slot: Slot) => void): PongEngine {
   const t2x = useSharedValue(CX);
   const t3x = useSharedValue(CX);
   const t4x = useSharedValue(CX);
+  const t5x = useSharedValue(CX);
+  const t6x = useSharedValue(CX);
+  const t7x = useSharedValue(CX);
+  const t8x = useSharedValue(CX);
+  const t9x = useSharedValue(CX);
   const t0y = useSharedValue(CY);
   const t1y = useSharedValue(CY);
   const t2y = useSharedValue(CY);
   const t3y = useSharedValue(CY);
   const t4y = useSharedValue(CY);
+  const t5y = useSharedValue(CY);
+  const t6y = useSharedValue(CY);
+  const t7y = useSharedValue(CY);
+  const t8y = useSharedValue(CY);
+  const t9y = useSharedValue(CY);
   // Arrays are built at render time only (for Skia's render map) — not captured by worklets.
-  const trailX = [t0x, t1x, t2x, t3x, t4x];
-  const trailY = [t0y, t1y, t2y, t3y, t4y];
+  const trailX = [t0x, t1x, t2x, t3x, t4x, t5x, t6x, t7x, t8x, t9x];
+  const trailY = [t0y, t1y, t2y, t3y, t4y, t5y, t6y, t7y, t8y, t9y];
 
   const onScoreRef = useRef(onScore);
   onScoreRef.current = onScore;
@@ -168,6 +178,16 @@ export function usePongEngine(onScore: (slot: Slot) => void): PongEngine {
     }
 
     // trail shift — individual SVs (oldest first)
+    t9x.value = t8x.value;
+    t9y.value = t8y.value;
+    t8x.value = t7x.value;
+    t8y.value = t7y.value;
+    t7x.value = t6x.value;
+    t7y.value = t6y.value;
+    t6x.value = t5x.value;
+    t6y.value = t5y.value;
+    t5x.value = t4x.value;
+    t5y.value = t4y.value;
     t4x.value = t3x.value;
     t4y.value = t3y.value;
     t3x.value = t2x.value;
@@ -201,7 +221,9 @@ export function usePongEngine(onScore: (slot: Slot) => void): PongEngine {
       rally.value = 0;
       acc.value = 0;
       t0x.value = CX; t1x.value = CX; t2x.value = CX; t3x.value = CX; t4x.value = CX;
+      t5x.value = CX; t6x.value = CX; t7x.value = CX; t8x.value = CX; t9x.value = CX;
       t0y.value = CY; t1y.value = CY; t2y.value = CY; t3y.value = CY; t4y.value = CY;
+      t5y.value = CY; t6y.value = CY; t7y.value = CY; t8y.value = CY; t9y.value = CY;
       running.value = true;
     })(vyDir, vxr);
   };
@@ -222,7 +244,9 @@ export function usePongEngine(onScore: (slot: Slot) => void): PongEngine {
       ballX.value = 150; ballY.value = 560;
       p1x.value = 132; p2x.value = 250;
       t0x.value = 150; t1x.value = 176; t2x.value = 200; t3x.value = 222; t4x.value = 244;
+      t5x.value = 264; t6x.value = 282; t7x.value = 298; t8x.value = 312; t9x.value = 324;
       t0y.value = 560; t1y.value = 512; t2y.value = 470; t3y.value = 432; t4y.value = 398;
+      t5y.value = 368; t6y.value = 342; t7y.value = 320; t8y.value = 302; t9y.value = 288;
     })();
   };
 

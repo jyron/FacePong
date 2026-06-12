@@ -37,7 +37,40 @@ import { FacePaddle } from './FacePaddle';
 import type { CourtVisual } from './usePongEngine';
 import type { Faces } from '../faces/FaceStore';
 
-const TRAIL_OPACITY = [0.22, 0.17, 0.12, 0.08, 0.05];
+// Comet streak behind the ball (the look from the store promos): the trail ring
+// buffer is drawn as round-cap line segments that taper in width and fade in
+// opacity from the ball back to a point, so the tail reads as one continuous
+// streak that curves through bounces instead of a row of separate blobs.
+const TRAIL_W = [16, 14, 12.2, 10.5, 8.9, 7.3, 5.8, 4.4, 3.1, 2];
+const TRAIL_O = [0.4, 0.33, 0.27, 0.21, 0.165, 0.125, 0.09, 0.065, 0.045, 0.03];
+
+// One streak segment. Endpoint SharedValues are passed individually so the
+// derived values capture them directly (see worklet note at the top).
+function TrailSegment({
+  ax,
+  ay,
+  bx,
+  by,
+  w,
+  o,
+  color,
+}: {
+  ax: { value: number };
+  ay: { value: number };
+  bx: { value: number };
+  by: { value: number };
+  w: number;
+  o: number;
+  color: { value: string } | string;
+}) {
+  const p1 = useDerivedValue(() => vec(ax.value, ay.value));
+  const p2 = useDerivedValue(() => vec(bx.value, by.value));
+  return (
+    <Line p1={p1} p2={p2} color={color} style="stroke" strokeWidth={w} strokeCap="round" opacity={o}>
+      <BlurMask blur={4} style="normal" />
+    </Line>
+  );
+}
 
 // Confetti splash on paddle hits: per-burst particle palette (indexes double
 // as the per-particle pseudo-random stream id).
@@ -238,9 +271,16 @@ export function PongCourt({
             <Circle cx={COURT.W / 2} cy={COURT.H / 2} r={48} color="rgba(255,255,255,0.10)" style="stroke" strokeWidth={2} />
 
             {trailX.map((tx, i) => (
-              <Circle key={i} cx={tx} cy={trailY[i]} r={BALL_R} color={heat} opacity={TRAIL_OPACITY[i]}>
-                <BlurMask blur={5} style="normal" />
-              </Circle>
+              <TrailSegment
+                key={i}
+                ax={i === 0 ? ballX : trailX[i - 1]}
+                ay={i === 0 ? ballY : trailY[i - 1]}
+                bx={tx}
+                by={trailY[i]}
+                w={TRAIL_W[i]}
+                o={TRAIL_O[i]}
+                color={heat}
+              />
             ))}
 
             <Circle cx={ballX} cy={ballY} r={glowR} color={heat} opacity={0.6}>
