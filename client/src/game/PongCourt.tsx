@@ -39,6 +39,52 @@ import type { Faces } from '../faces/FaceStore';
 
 const TRAIL_OPACITY = [0.22, 0.17, 0.12, 0.08, 0.05];
 
+// Confetti splash on paddle hits: per-burst particle palette (indexes double
+// as the per-particle pseudo-random stream id).
+const SPLASH_COLORS = [C.cyan, C.magenta, C.lime, C.amber, '#ffffff', C.lime, C.magenta, C.cyan];
+
+// Deterministic per-particle pseudo-random in [0,1) from (seed, particle, k).
+function splashRnd(seed: number, i: number, k: number) {
+  'worklet';
+  const v = Math.sin(seed * 12.9898 + i * 78.233 + k * 37.719) * 43758.5453;
+  return v - Math.floor(v);
+}
+
+// One confetti particle of a paddle-hit burst. t runs 0→1 (linear); position
+// eases out along a randomized direction away from the paddle face, with a
+// little gravity so the burst reads as confetti, not just sparks.
+function SplashDot({
+  t,
+  x,
+  y,
+  seed,
+  dir,
+  i,
+  color,
+}: {
+  t: { value: number };
+  x: { value: number };
+  y: number;
+  seed: { value: number };
+  dir: 1 | -1; // -1: burst flies up (bottom paddle), 1: flies down (top paddle)
+  i: number;
+  color: string;
+}) {
+  const cx = useDerivedValue(() => {
+    const e = 1 - (1 - t.value) ** 3;
+    const a = dir * (Math.PI / 2) + (splashRnd(seed.value, i, 1) - 0.5) * 2.4;
+    return x.value + Math.cos(a) * (34 + splashRnd(seed.value, i, 2) * 52) * e;
+  });
+  const cy = useDerivedValue(() => {
+    const e = 1 - (1 - t.value) ** 3;
+    const a = dir * (Math.PI / 2) + (splashRnd(seed.value, i, 1) - 0.5) * 2.4;
+    return y + Math.sin(a) * (34 + splashRnd(seed.value, i, 2) * 52) * e + 26 * t.value * t.value;
+  });
+  const r = useDerivedValue(() => (2.1 + splashRnd(seed.value, i, 3) * 1.9) * (1 - t.value * 0.45));
+  const o = useDerivedValue(() => (t.value >= 1 ? 0 : 0.95 * (1 - t.value)));
+  return <Circle cx={cx} cy={cy} r={r} color={color} opacity={o} />;
+}
+
 // Stable JS-side dispatchers for runOnJS (module scope = same reference every
 // render, so the worklet reactions never rebuild).
 const paddleSfx = (slot: 'p1' | 'p2', rally: number) => sfx.paddle(slot, rally);
@@ -90,6 +136,11 @@ export function PongCourt({
   const r1X = useSharedValue(0);
   const r2T = useSharedValue(1);
   const r2X = useSharedValue(0);
+  // Confetti splash per paddle: linear 0→1 progress + a reroll seed per burst.
+  const s1T = useSharedValue(1);
+  const s1Seed = useSharedValue(1);
+  const s2T = useSharedValue(1);
+  const s2Seed = useSharedValue(2);
 
   useAnimatedReaction(
     () => p1Hit.value,
@@ -100,6 +151,9 @@ export function PongCourt({
         r1X.value = ballX.value;
         r1T.value = 0;
         r1T.value = withTiming(1, { duration: 380, easing: Easing.out(Easing.cubic) });
+        s1Seed.value = cur; // monotonic counter = fresh particle pattern per hit
+        s1T.value = 0;
+        s1T.value = withTiming(1, { duration: 620 });
         if (rally.value >= 4) {
           shake.value = Math.min(2 + rally.value * 0.2, 5.5);
           shake.value = withTiming(0, { duration: 280 });
@@ -117,6 +171,9 @@ export function PongCourt({
         r2X.value = ballX.value;
         r2T.value = 0;
         r2T.value = withTiming(1, { duration: 380, easing: Easing.out(Easing.cubic) });
+        s2Seed.value = cur + 0.5; // offset so p1/p2 bursts never share a pattern
+        s2T.value = 0;
+        s2T.value = withTiming(1, { duration: 620 });
         if (rally.value >= 4) {
           shake.value = Math.min(2 + rally.value * 0.2, 5.5);
           shake.value = withTiming(0, { duration: 280 });
@@ -197,6 +254,13 @@ export function PongCourt({
 
             <FacePaddle uri={faces.p2} slot="p2" x={p2x} y={TOP_Y} size={PADDLE} pop={p2Pop} />
             <FacePaddle uri={faces.p1} slot="p1" x={p1x} y={BOT_Y} size={PADDLE} pop={p1Pop} />
+
+            {SPLASH_COLORS.map((c, i) => (
+              <SplashDot key={`s2-${i}`} t={s2T} x={r2X} y={TOP_Y + PADDLE_R} seed={s2Seed} dir={1} i={i} color={c} />
+            ))}
+            {SPLASH_COLORS.map((c, i) => (
+              <SplashDot key={`s1-${i}`} t={s1T} x={r1X} y={BOT_Y - PADDLE_R} seed={s1Seed} dir={-1} i={i} color={c} />
+            ))}
           </Group>
         </Canvas>
       </View>

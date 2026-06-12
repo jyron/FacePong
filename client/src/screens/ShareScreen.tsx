@@ -74,7 +74,7 @@ export function ShareScreen({
             <FaceCoin slot="p2" size={84} uri={faces.p2} />
           </View>
           <View style={styles.cardResult}>
-            <Text style={styles.win}>👑 {winnerName} WINS</Text>
+            <Text style={styles.win}>👑 {winnerName === 'YOU' ? 'YOU WIN' : `${winnerName} WINS`}</Text>
             <View style={{ marginTop: 8 }}>
               <ScoreChip p1={scores.p1} p2={scores.p2} size={28} reversed={winner === 'p2'} />
             </View>

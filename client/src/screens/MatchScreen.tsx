@@ -58,7 +58,7 @@ export function MatchScreen({
           <FaceCoin slot={winner} size={132} uri={faces[winner]} />
         </View>
         <Text style={[styles.winName, { color: isCyan ? C.cyan : C.magenta, textShadowColor: isCyan ? 'rgba(25,231,255,0.55)' : 'rgba(255,46,136,0.55)' }]}>
-          {winnerName} WINS
+          {winnerName === 'YOU' ? 'YOU WIN' : `${winnerName} WINS`}
         </Text>
 
         <View style={styles.score}>
