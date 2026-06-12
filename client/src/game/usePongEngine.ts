@@ -122,12 +122,15 @@ export function usePongEngine(onScore: (slot: Slot) => void): PongEngine {
       ballX.value += vx.value;
       ballY.value += vy.value;
 
+      // Bounces mirror the position across the contact plane instead of
+      // clamping to it — a clamp eats the sub-tick remainder and reads as a
+      // one-frame stall on every impact (mirrors shared/engine.ts).
       if (ballX.value < BALL_R + WALL_PAD) {
-        ballX.value = BALL_R + WALL_PAD;
+        ballX.value = 2 * (BALL_R + WALL_PAD) - ballX.value;
         vx.value = Math.abs(vx.value);
         wallHit.value += 1;
       } else if (ballX.value > COURT.W - BALL_R - WALL_PAD) {
-        ballX.value = COURT.W - BALL_R - WALL_PAD;
+        ballX.value = 2 * (COURT.W - BALL_R - WALL_PAD) - ballX.value;
         vx.value = -Math.abs(vx.value);
         wallHit.value += 1;
       }
@@ -135,7 +138,7 @@ export function usePongEngine(onScore: (slot: Slot) => void): PongEngine {
       if (vy.value < 0 && ballY.value - BALL_R < TOP_Y + PADDLE_R && ballY.value - BALL_R > TOP_Y - PADDLE_R) {
         const dx = ballX.value - p2x.value;
         if (Math.abs(dx) < PADDLE_R + BALL_R) {
-          ballY.value = TOP_Y + PADDLE_R + BALL_R;
+          ballY.value = 2 * (TOP_Y + PADDLE_R + BALL_R) - ballY.value; // mirror, not clamp
           vy.value = Math.abs(vy.value) * RALLY_RAMP;
           vx.value = (dx / PADDLE_R) * PADDLE_BOUNCE;
           rally.value += 1;
@@ -145,7 +148,7 @@ export function usePongEngine(onScore: (slot: Slot) => void): PongEngine {
       if (vy.value > 0 && ballY.value + BALL_R > BOT_Y - PADDLE_R && ballY.value + BALL_R < BOT_Y + PADDLE_R) {
         const dx = ballX.value - p1x.value;
         if (Math.abs(dx) < PADDLE_R + BALL_R) {
-          ballY.value = BOT_Y - PADDLE_R - BALL_R;
+          ballY.value = 2 * (BOT_Y - PADDLE_R - BALL_R) - ballY.value; // mirror, not clamp
           vy.value = -Math.abs(vy.value) * RALLY_RAMP;
           vx.value = (dx / PADDLE_R) * PADDLE_BOUNCE;
           rally.value += 1;

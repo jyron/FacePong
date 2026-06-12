@@ -72,12 +72,15 @@ export function step(s: EngineState): StepResult {
   s.ballX += s.vx;
   s.ballY += s.vy;
 
-  // left / right walls
+  // left / right walls. Bounces MIRROR the position across the contact plane
+  // (rather than clamping to it) so the ball keeps its full per-tick travel:
+  // a clamp eats the sub-tick remainder and reads as a one-frame stall on
+  // every impact, which gets very visible at late-rally speeds.
   if (s.ballX < BALL_R + WALL_PAD) {
-    s.ballX = BALL_R + WALL_PAD;
+    s.ballX = 2 * (BALL_R + WALL_PAD) - s.ballX;
     s.vx = Math.abs(s.vx);
   } else if (s.ballX > COURT.W - BALL_R - WALL_PAD) {
-    s.ballX = COURT.W - BALL_R - WALL_PAD;
+    s.ballX = 2 * (COURT.W - BALL_R - WALL_PAD) - s.ballX;
     s.vx = -Math.abs(s.vx);
   }
 
@@ -85,7 +88,7 @@ export function step(s: EngineState): StepResult {
   if (s.vy < 0 && s.ballY - BALL_R < TOP_Y + PADDLE_R && s.ballY - BALL_R > TOP_Y - PADDLE_R) {
     const dx = s.ballX - s.p2x;
     if (Math.abs(dx) < PADDLE_R + BALL_R) {
-      s.ballY = TOP_Y + PADDLE_R + BALL_R;
+      s.ballY = 2 * (TOP_Y + PADDLE_R + BALL_R) - s.ballY; // mirror, not clamp (see walls)
       s.vy = Math.abs(s.vy) * RALLY_RAMP; // each return is a touch faster (clamped below)
       s.vx = (dx / PADDLE_R) * PADDLE_BOUNCE;
       s.rally += 1;
@@ -97,7 +100,7 @@ export function step(s: EngineState): StepResult {
   if (s.vy > 0 && s.ballY + BALL_R > BOT_Y - PADDLE_R && s.ballY + BALL_R < BOT_Y + PADDLE_R) {
     const dx = s.ballX - s.p1x;
     if (Math.abs(dx) < PADDLE_R + BALL_R) {
-      s.ballY = BOT_Y - PADDLE_R - BALL_R;
+      s.ballY = 2 * (BOT_Y - PADDLE_R - BALL_R) - s.ballY; // mirror, not clamp (see walls)
       s.vy = -Math.abs(s.vy) * RALLY_RAMP; // each return is a touch faster (clamped below)
       s.vx = (dx / PADDLE_R) * PADDLE_BOUNCE;
       s.rally += 1;
