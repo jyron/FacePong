@@ -44,8 +44,19 @@ import type { Faces } from '../faces/FaceStore';
 // Dots animate NUMBER props only (cx/cy/r) — the one Skia+Reanimated pattern
 // this app has verified in release builds; object-valued animated props
 // (Line p1/p2 points) silently failed to render on device.
-const TRAIL_R = [10.5, 10.0, 9.6, 9.1, 8.7, 8.2, 7.8, 7.3, 6.8, 6.4, 5.9, 5.5, 5.0, 4.6, 4.1, 3.6, 3.2, 2.7, 2.3, 1.8];
-const TRAIL_O = [0.5, 0.46, 0.43, 0.39, 0.36, 0.33, 0.29, 0.26, 0.23, 0.2, 0.18, 0.15, 0.13, 0.1, 0.08, 0.06, 0.045, 0.03, 0.03, 0.03];
+//
+// 20 trail points × 2 dots = a long, dramatic 40-dot tail. Radius/opacity are
+// generated from a smooth power-curve taper (bright ball-sized head → fine
+// speck) rather than hand-tuned so the length is trivial to retune.
+const TRAIL_DOTS = 40; // = (trail buffer length in usePongEngine) × 2
+const TRAIL_R = Array.from({ length: TRAIL_DOTS }, (_, i) => {
+  const f = i / (TRAIL_DOTS - 1);
+  return 11.5 * (1 - f) ** 1.3 + 1.1;
+});
+const TRAIL_O = Array.from({ length: TRAIL_DOTS }, (_, i) => {
+  const f = i / (TRAIL_DOTS - 1);
+  return 0.52 * (1 - f) ** 1.4 + 0.02;
+});
 
 // One streak dot at fraction `f` between two trail points. Endpoint
 // SharedValues are passed individually so the derived values capture them
@@ -304,7 +315,7 @@ export function PongCourt({
                   f={f}
                   r={TRAIL_R[i * 2 + half]}
                   o={TRAIL_O[i * 2 + half]}
-                  blur={i * 2 + half < 6}
+                  blur={i * 2 + half < 8}
                   color={heat}
                   flare={trailFlare}
                 />
