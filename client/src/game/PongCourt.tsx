@@ -37,38 +37,52 @@ import { FacePaddle } from './FacePaddle';
 import type { CourtVisual } from './usePongEngine';
 import type { Faces } from '../faces/FaceStore';
 
-// Comet streak behind the ball (the look from the store promos): the trail ring
-// buffer is drawn as round-cap line segments that taper in width and fade in
-// opacity from the ball back to a point, so the tail reads as one continuous
+// Comet streak behind the ball (the look from the store promos): two dots are
+// interpolated onto every trail segment, tapering in radius and opacity from
+// ball-sized at the head down to a speck, so the tail reads as one continuous
 // streak that curves through bounces instead of a row of separate blobs.
-const TRAIL_W = [16, 14, 12.2, 10.5, 8.9, 7.3, 5.8, 4.4, 3.1, 2];
-const TRAIL_O = [0.4, 0.33, 0.27, 0.21, 0.165, 0.125, 0.09, 0.065, 0.045, 0.03];
+// Dots animate NUMBER props only (cx/cy/r) — the one Skia+Reanimated pattern
+// this app has verified in release builds; object-valued animated props
+// (Line p1/p2 points) silently failed to render on device.
+const TRAIL_R = [10.5, 10.0, 9.6, 9.1, 8.7, 8.2, 7.8, 7.3, 6.8, 6.4, 5.9, 5.5, 5.0, 4.6, 4.1, 3.6, 3.2, 2.7, 2.3, 1.8];
+const TRAIL_O = [0.5, 0.46, 0.43, 0.39, 0.36, 0.33, 0.29, 0.26, 0.23, 0.2, 0.18, 0.15, 0.13, 0.1, 0.08, 0.06, 0.045, 0.03, 0.03, 0.03];
 
-// One streak segment. Endpoint SharedValues are passed individually so the
-// derived values capture them directly (see worklet note at the top).
-function TrailSegment({
+// One streak dot at fraction `f` between two trail points. Endpoint
+// SharedValues are passed individually so the derived values capture them
+// directly (see worklet note at the top). `flare` (0 at rest, pulsed to 1 on a
+// paddle hit) fattens every dot and brightens the whole comet, so the streak
+// visibly flares the instant the ball is struck.
+function TrailDot({
   ax,
   ay,
   bx,
   by,
-  w,
+  f,
+  r,
   o,
+  blur,
   color,
+  flare,
 }: {
   ax: { value: number };
   ay: { value: number };
   bx: { value: number };
   by: { value: number };
-  w: number;
+  f: number;
+  r: number;
   o: number;
+  blur: boolean;
   color: { value: string } | string;
+  flare: { value: number };
 }) {
-  const p1 = useDerivedValue(() => vec(ax.value, ay.value));
-  const p2 = useDerivedValue(() => vec(bx.value, by.value));
+  const cx = useDerivedValue(() => ax.value + (bx.value - ax.value) * f);
+  const cy = useDerivedValue(() => ay.value + (by.value - ay.value) * f);
+  const cr = useDerivedValue(() => r * (1 + flare.value * 0.75));
+  const co = useDerivedValue(() => Math.min(0.95, o * (1 + flare.value * 2.6)));
   return (
-    <Line p1={p1} p2={p2} color={color} style="stroke" strokeWidth={w} strokeCap="round" opacity={o}>
-      <BlurMask blur={4} style="normal" />
-    </Line>
+    <Circle cx={cx} cy={cy} r={cr} color={color} opacity={co}>
+      {blur ? <BlurMask blur={4} style="normal" /> : null}
+    </Circle>
   );
 }
 
@@ -123,13 +137,15 @@ function SplashDot({
 const paddleSfx = (slot: 'p1' | 'p2', rally: number) => sfx.paddle(slot, rally);
 const wallSfx = () => sfx.wall();
 
-// The "pop" a face does when it strikes the ball: a fast punch to 1, then an
-// underdamped spring back to 0 that overshoots — the overshoot is the jiggle.
+// The "pop" a face does when it strikes the ball: a near-instant punch to 1,
+// then a loosely-damped spring back to 0 that overshoots hard through zero —
+// the overshoot (negative pop) is what makes the face rebound the opposite way
+// and wobble a couple of times before settling. Low damping = big jiggle.
 function popAnim() {
   'worklet';
   return withSequence(
-    withTiming(1, { duration: 55 }),
-    withSpring(0, { damping: 8, stiffness: 240, mass: 0.55 }),
+    withTiming(1, { duration: 40 }),
+    withSpring(0, { damping: 6, stiffness: 240, mass: 0.6 }),
   );
 }
 
@@ -164,6 +180,9 @@ export function PongCourt({
   // Ball squash-pulse (any impact) and screen-shake amplitude (court px).
   const pulse = useSharedValue(0);
   const shake = useSharedValue(0);
+  // Comet-trail flare: pulsed to 1 on a paddle hit, decays to 0 — fattens and
+  // brightens the whole streak so it reads as a speed burst off the paddle.
+  const trailFlare = useSharedValue(0);
   // Impact rings, one per paddle: t runs 0→1, x/y freeze at the contact point.
   const r1T = useSharedValue(1);
   const r1X = useSharedValue(0);
@@ -181,6 +200,8 @@ export function PongCourt({
       if (prev != null && cur > prev) {
         p1Pop.value = popAnim();
         pulse.value = pulseAnim();
+        trailFlare.value = 1;
+        trailFlare.value = withTiming(0, { duration: 320, easing: Easing.out(Easing.cubic) });
         r1X.value = ballX.value;
         r1T.value = 0;
         r1T.value = withTiming(1, { duration: 380, easing: Easing.out(Easing.cubic) });
@@ -201,6 +222,8 @@ export function PongCourt({
       if (prev != null && cur > prev) {
         p2Pop.value = popAnim();
         pulse.value = pulseAnim();
+        trailFlare.value = 1;
+        trailFlare.value = withTiming(0, { duration: 320, easing: Easing.out(Easing.cubic) });
         r2X.value = ballX.value;
         r2T.value = 0;
         r2T.value = withTiming(1, { duration: 380, easing: Easing.out(Easing.cubic) });
@@ -270,18 +293,23 @@ export function PongCourt({
             <Line p1={vec(COURT.W * 0.08, COURT.H / 2)} p2={vec(COURT.W * 0.92, COURT.H / 2)} color="rgba(255,255,255,0.12)" style="stroke" strokeWidth={2} />
             <Circle cx={COURT.W / 2} cy={COURT.H / 2} r={48} color="rgba(255,255,255,0.10)" style="stroke" strokeWidth={2} />
 
-            {trailX.map((tx, i) => (
-              <TrailSegment
-                key={i}
-                ax={i === 0 ? ballX : trailX[i - 1]}
-                ay={i === 0 ? ballY : trailY[i - 1]}
-                bx={tx}
-                by={trailY[i]}
-                w={TRAIL_W[i]}
-                o={TRAIL_O[i]}
-                color={heat}
-              />
-            ))}
+            {trailX.map((tx, i) =>
+              [0.5, 1].map((f, half) => (
+                <TrailDot
+                  key={`${i}-${half}`}
+                  ax={i === 0 ? ballX : trailX[i - 1]}
+                  ay={i === 0 ? ballY : trailY[i - 1]}
+                  bx={tx}
+                  by={trailY[i]}
+                  f={f}
+                  r={TRAIL_R[i * 2 + half]}
+                  o={TRAIL_O[i * 2 + half]}
+                  blur={i * 2 + half < 6}
+                  color={heat}
+                  flare={trailFlare}
+                />
+              )),
+            )}
 
             <Circle cx={ballX} cy={ballY} r={glowR} color={heat} opacity={0.6}>
               <BlurMask blur={10} style="normal" />

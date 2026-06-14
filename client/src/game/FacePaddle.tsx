@@ -119,13 +119,16 @@ export function FacePaddle({
     () => (silhouette ? null : Skia.SVG.MakeFromString(defaultFaceSvgString(slot))),
     [silhouette, slot],
   );
-  const amp = size * 0.06;
+  const amp = size * 0.18;
 
   // Silhouette: deform each mesh vertex (squash + ripple) so the outline wobbles.
+  // The squash is big and anisotropic, and because `pop` springs through zero
+  // (overshoots negative) the face snaps WIDE-and-short on contact then rebounds
+  // TALL-and-narrow before settling — a cartoon impact, not a nudge.
   const vertices = useDerivedValue<SkPoint[]>(() => {
     const p = pop.value;
-    const sx = 1 + p * 0.16; // squash wider...
-    const sy = 1 - p * 0.12; // ...and shorter on impact
+    const sx = 1 + p * 0.45; // squash much wider...
+    const sy = 1 - p * 0.34; // ...and much shorter on impact
     const out: SkPoint[] = [];
     for (let i = 0; i < rest.length; i++) {
       const vx = rest[i].x;
@@ -135,7 +138,9 @@ export function FacePaddle({
       const d = Math.sqrt(vx * vx + vy * vy);
       if (d > 0.001) {
         const rr = d / maxR;
-        const k = p * amp * Math.sin(rr * 6.0); // ripple that rides the spring
+        // Phase rides `p`, so the ripple reads as a shockwave traveling out from
+        // the centre to the rim as the spring fires, not a static pinch.
+        const k = p * amp * Math.sin(rr * 7.0 - p * 5.0);
         nx += (vx / d) * k;
         ny += (vy / d) * k;
       }
@@ -151,8 +156,8 @@ export function FacePaddle({
     return [
       { translateX: x.value },
       { translateY: y },
-      { scaleX: 1 + p * 0.16 },
-      { scaleY: 1 - p * 0.12 },
+      { scaleX: 1 + p * 0.4 },
+      { scaleY: 1 - p * 0.3 },
     ];
   });
 
