@@ -33,6 +33,6 @@ yarn-error.*
 *.orig.*
 .DS_Store
 
-# local-only Claude settings
-.claude/settings.local.json
-client/.claude/settings.local.json
+# local-only Claude tooling (skills, settings) + local deploy script — not part of the app
+.claude/
+deploy.sh
