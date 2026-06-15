@@ -1,93 +1,88 @@
 # FacePong 🏓
 
-A retro-arcade neon ping-pong game where **your face is the paddle**. Built from a
-Claude Design handoff. Cross-platform (iOS + Android) via Expo, with three modes:
+A retro-arcade neon ping-pong game where **your face is the paddle**. Three modes:
 
 - **Vs Computer** — fully offline single-player against an AI paddle.
 - **Quick Match** — get randomly paired with another waiting player online.
 - **Play a Friend** — create a private game and share the code, or join by code.
 
-Two people on two different devices (iPhone ↔ Android) play the same live match
-through a hosted authoritative game server.
+iOS and Android play the same live cross-platform match through one hosted
+authoritative game server.
 
 ## Structure
 
 ```
 facepong/
-  client/            Expo (React Native + TypeScript) app — the game
-    shared/          SINGLE SOURCE OF TRUTH: physics engine, geometry constants,
-                     network protocol. Imported by the client AND bundled into
-                     the server, so the two can never disagree.
-    src/
-      game/          Skia court + physics loop (usePongEngine) for CPU play
-      net/           Colyseus client + networked renderer (useNetGame)
-      screens/       Start, Friend menu, Round, Play, Point, Match, Share, OnlineGame
-      components/    FaceCoin, NeonButton, ScoreChip, Confetti, ArcadeBg
-      faces/         photo/selfie picker + face store (AsyncStorage)
-      theme/         neon-arcade tokens ported from the design
-    shims/ws.js      makes colyseus.js use RN's global WebSocket
-  server/            Colyseus authoritative game server (Node + TypeScript)
-    src/rooms/PongRoom.ts   60Hz authoritative physics, scoring, matchmaking
-    src/schema/PongState.ts synced room state
+  ios/         Native iPhone app — Swift + SpriteKit + SwiftUI + Apple Vision.
+               The primary, shipping iOS app (App Store: com.facepong.app).
+    FacePong/
+      Game/      SpriteKit court, comet trail, ball, FacePaddleNode (warp deform),
+                 deterministic PongEngine (ported from android/shared/engine.ts)
+      Vision/    FaceCutout (VNGenerateForegroundInstanceMask + face-box head crop
+                 + edge feather) and the camera/photo picker
+      Net/       Native Colyseus 0.16 client (matchmaking + WebSocket + schema-v3
+                 decode + msgpack) — speaks the same protocol as the Android client
+      Screens/   Start, Friend, Round, PlayHUD, Point, Match, Share, Online (SwiftUI)
+      UI/Theme/  Neon design system, palette, fonts
+    project.yml  xcodegen project spec    tools/sim.sh  build+run+screenshot helper
+
+  android/     Expo (React Native) app — the Android client.
+    shared/      SINGLE SOURCE OF TRUTH: physics engine, geometry constants, and
+                 network protocol. Imported by the Expo app AND bundled into the
+                 server; the iOS engine is a verbatim Swift port of it.
+    src/         game / net / screens / faces / theme
+
+  server/      Colyseus authoritative game server (Node + TypeScript).
+    src/rooms/PongRoom.ts    60Hz authoritative physics, scoring, matchmaking
+    src/schema/PongState.ts  synced room state (incl. each player's face cutout)
+
+  appstore/    Marketing & store assets — promo video, screenshot sets, generators.
 ```
+
+Every client — iOS native and Android Expo — speaks the **same Colyseus protocol**
+to the same rooms, so an iPhone and an Android phone match and play each other.
 
 ## Running it
 
-**Client (the game):**
+**iOS (native):**
 ```bash
-cd client
-npx expo start          # then press i (iOS sim) / a (Android), or scan the QR in Expo Go
+cd ios
+brew install xcodegen                 # one-time
+tools/sim.sh                          # build, install, run on a booted simulator
+# or open FacePong.xcodeproj in Xcode and run on a device
 ```
-Everything runs in **Expo Go** — no native build needed for development. The whole
-dependency set (Skia, Reanimated, gesture-handler, camera, etc.) is bundled in Expo Go.
+Apple Vision's foreground-mask request only runs on real hardware, not the
+simulator — test the camera→cutout flow on a device or via `tools/facecutout.swift`
+on the Mac.
 
-**Server:** already deployed to Railway (see below). To run it locally instead, set
-`client/src/net/config.ts` `SERVER_URL` to `ws://localhost:2567` and:
+**Android (Expo):**
 ```bash
-cd server
-npm run dev
+cd android
+npx expo start                        # press a for Android
 ```
 
-## Deployment (Railway)
-
-The realtime server is deployed to Railway (project **facepong**) at:
-
-- **wss://facepong-production.up.railway.app** (used by `client/src/net/config.ts`)
-
-To redeploy after server changes:
+**Server:**
 ```bash
 cd server
-npm run build          # tsup bundles src + client/shared into dist/index.js
-railway up             # uploads & deploys (uses railway.json: prebuilt dist, no rebuild)
+npm run dev                           # ws://localhost:2567
 ```
+Point a client at a local server with `FP_SERVER=ws://localhost:2567` (iOS, DEBUG)
+or `android/src/net/config.ts` `SERVER_URL`.
+
+## Deployment
+
+- **Server:** Railway auto-deploys on push to `main` (`railway.json` → builds `server/`).
+  Endpoint: **wss://facepong-production.up.railway.app**.
+- **iOS:** `xcodebuild archive` + `exportArchive` (upload) to App Store Connect app
+  `6779310642` using the ASC API key. Build number must exceed the last upload.
 
 ## How the netcode works
 
-- The server runs the **same physics engine** (`client/shared/engine.ts`) the client
-  uses for CPU play, authoritatively at 60Hz, and patches state to clients ~20Hz.
-- Canonical frame is p1=bottom; a p2 client **flips Y** so each player sees themselves
-  at the bottom (cyan), opponent at top (magenta).
+- The server runs the **same physics engine** (`android/shared/engine.ts`)
+  authoritatively at 60Hz and patches state to clients at 60Hz.
+- Canonical frame is p1=bottom; a p2 client **flips Y** so each player sees
+  themselves at the bottom (cyan), opponent at top (magenta).
 - The local paddle is **client-predicted** from finger input; the ball and opponent
-  paddle are **interpolated** toward server snapshots. All position writes happen on the
-  UI thread (Reanimated `useFrameCallback` / `runOnUI`) so Skia animates smoothly.
-- Faces are sent once per player (~256px JPEG) and relayed to the opponent.
-
-## Status / notes
-
-**Verified** (two iOS simulators against the live Railway server):
-- Vs Computer — full game with real finger-drag paddle control, scoring, all screens.
-- Quick Match — random pairing, synchronized match, mirrored scores, full flow.
-- Play a Friend — host gets a code (e.g. `E4FS`), friend joins by code, they pair.
-- Faces — a chosen image renders on your paddle and transmits to the opponent's screen.
-
-**Known gaps / not yet done:**
-- **Android untested here** (no Android emulator on this machine). It runs the same JS
-  client and talks to the same server/protocol, so it's expected to interoperate — confirm
-  on a real Android device or an EAS build.
-- **Photo-picker UI** wasn't automatable in this environment, so the in-app pick/selfie
-  flow (standard `expo-image-picker`) is built but its UI is unverified; the
-  send→relay→render half was verified with a seeded image.
-- **Opponent leaves mid-match:** the remaining player drops to a waiting/"OFFLINE" state
-  with no explicit "opponent left" message — functional but unpolished.
-- **App Store / Play Store release** is a separate step (EAS Build + Apple Developer
-  $99/yr + Google Play $25). Development/testing needs none of that.
+  paddle are **interpolated** toward server snapshots.
+- Each player's segmented face cutout rides in room **state** (`Player.faceData`),
+  so it syncs to the opponent — including a late joiner — automatically.

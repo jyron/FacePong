@@ -48,14 +48,22 @@ import type { Faces } from '../faces/FaceStore';
 // 20 trail points × 2 dots = a long, dramatic 40-dot tail. Radius/opacity are
 // generated from a smooth power-curve taper (bright ball-sized head → fine
 // speck) rather than hand-tuned so the length is trivial to retune.
-const TRAIL_DOTS = 40; // = (trail buffer length in usePongEngine) × 2
+const TRAIL_DOTS = 64; // = (trail buffer length in usePongEngine) × 2
 const TRAIL_R = Array.from({ length: TRAIL_DOTS }, (_, i) => {
   const f = i / (TRAIL_DOTS - 1);
-  return 11.5 * (1 - f) ** 1.3 + 1.1;
+  return 12.5 * (1 - f) ** 1.15 + 0.9; // fat ball-sized head → fine speck
 });
 const TRAIL_O = Array.from({ length: TRAIL_DOTS }, (_, i) => {
   const f = i / (TRAIL_DOTS - 1);
-  return 0.52 * (1 - f) ** 1.4 + 0.02;
+  return 0.58 * (1 - f) ** 1.2 + 0.04; // brighter, warmer body that doesn't die out
+});
+// Per-dot blend toward white-hot: ONLY the very front of the streak goes white,
+// so the rest stays the warm rally heat colour — the comet gradient from the
+// store promos. Drawn additively (see the Group blendMode="plus" below) so the
+// dense, large head dots stack into a blown-out white-hot core like the art.
+const TRAIL_WHITE = Array.from({ length: TRAIL_DOTS }, (_, i) => {
+  const f = i / (TRAIL_DOTS - 1); // 0 = head (at the ball), 1 = tail
+  return Math.max(0, 1 - f * 3.5) ** 1.8; // white-hot only in the front ~28%
 });
 
 // One streak dot at fraction `f` between two trail points. Endpoint
@@ -72,7 +80,8 @@ function TrailDot({
   r,
   o,
   blur,
-  color,
+  heat,
+  white,
   flare,
 }: {
   ax: { value: number };
@@ -83,16 +92,18 @@ function TrailDot({
   r: number;
   o: number;
   blur: boolean;
-  color: { value: string } | string;
+  heat: { value: string };
+  white: number; // 0 (full heat colour) → 1 (white-hot)
   flare: { value: number };
 }) {
   const cx = useDerivedValue(() => ax.value + (bx.value - ax.value) * f);
   const cy = useDerivedValue(() => ay.value + (by.value - ay.value) * f);
   const cr = useDerivedValue(() => r * (1 + flare.value * 0.75));
-  const co = useDerivedValue(() => Math.min(0.95, o * (1 + flare.value * 2.6)));
+  const co = useDerivedValue(() => Math.min(0.98, o * (1 + flare.value * 2.6)));
+  const color = useDerivedValue(() => interpolateColor(white, [0, 1], [heat.value, '#ffffff']));
   return (
     <Circle cx={cx} cy={cy} r={cr} color={color} opacity={co}>
-      {blur ? <BlurMask blur={4} style="normal" /> : null}
+      {blur ? <BlurMask blur={5} style="normal" /> : null}
     </Circle>
   );
 }
@@ -284,9 +295,11 @@ export function PongCourt({
   ]);
 
   const ballR = useDerivedValue(() => BALL_R * (1 + pulse.value * 0.5));
-  const glowR = useDerivedValue(() => (BALL_R + 3) * (1 + pulse.value * 0.8));
-  const hlX = useDerivedValue(() => ballX.value - 3.5);
-  const hlY = useDerivedValue(() => ballY.value - 3.5);
+  const glowR = useDerivedValue(() => (BALL_R + 6) * (1 + pulse.value * 0.9));
+  const wideGlowR = useDerivedValue(() => BALL_R * 2.6 * (1 + pulse.value * 0.6)); // soft bloom envelope
+  const coreR = useDerivedValue(() => BALL_R * 0.6 * (1 + pulse.value * 0.4)); // white-hot inner core
+  const hlX = useDerivedValue(() => ballX.value - 3);
+  const hlY = useDerivedValue(() => ballY.value - 3);
 
   // Impact rings expand + thin out + fade as t runs 0→1 (invisible at rest).
   const r1R = useDerivedValue(() => 14 + r1T.value * 64);
@@ -304,29 +317,38 @@ export function PongCourt({
             <Line p1={vec(COURT.W * 0.08, COURT.H / 2)} p2={vec(COURT.W * 0.92, COURT.H / 2)} color="rgba(255,255,255,0.12)" style="stroke" strokeWidth={2} />
             <Circle cx={COURT.W / 2} cy={COURT.H / 2} r={48} color="rgba(255,255,255,0.10)" style="stroke" strokeWidth={2} />
 
-            {trailX.map((tx, i) =>
-              [0.5, 1].map((f, half) => (
-                <TrailDot
-                  key={`${i}-${half}`}
-                  ax={i === 0 ? ballX : trailX[i - 1]}
-                  ay={i === 0 ? ballY : trailY[i - 1]}
-                  bx={tx}
-                  by={trailY[i]}
-                  f={f}
-                  r={TRAIL_R[i * 2 + half]}
-                  o={TRAIL_O[i * 2 + half]}
-                  blur={i * 2 + half < 8}
-                  color={heat}
-                  flare={trailFlare}
-                />
-              )),
-            )}
+            <Group blendMode="plus">
+              {trailX.map((tx, i) =>
+                [0.5, 1].map((f, half) => (
+                  <TrailDot
+                    key={`${i}-${half}`}
+                    ax={i === 0 ? ballX : trailX[i - 1]}
+                    ay={i === 0 ? ballY : trailY[i - 1]}
+                    bx={tx}
+                    by={trailY[i]}
+                    f={f}
+                    r={TRAIL_R[i * 2 + half]}
+                    o={TRAIL_O[i * 2 + half]}
+                    blur={i * 2 + half < 18}
+                    heat={heat}
+                    white={TRAIL_WHITE[i * 2 + half]}
+                    flare={trailFlare}
+                  />
+                )),
+              )}
 
-            <Circle cx={ballX} cy={ballY} r={glowR} color={heat} opacity={0.6}>
-              <BlurMask blur={10} style="normal" />
-            </Circle>
-            <Circle cx={ballX} cy={ballY} r={ballR} color={heat} />
-            <Circle cx={hlX} cy={hlY} r={3.5} color="#ffffff" />
+              <Circle cx={ballX} cy={ballY} r={wideGlowR} color={heat} opacity={0.4}>
+                <BlurMask blur={26} style="normal" />
+              </Circle>
+              <Circle cx={ballX} cy={ballY} r={glowR} color={heat} opacity={1}>
+                <BlurMask blur={16} style="normal" />
+              </Circle>
+              <Circle cx={ballX} cy={ballY} r={ballR} color={heat} />
+              <Circle cx={ballX} cy={ballY} r={coreR} color="#ffffff">
+                <BlurMask blur={3} style="normal" />
+              </Circle>
+              <Circle cx={hlX} cy={hlY} r={2.6} color="#ffffff" />
+            </Group>
 
             <Circle cx={r2X} cy={TOP_Y + PADDLE_R} r={r2R} color={C.magenta} style="stroke" strokeWidth={r2W} opacity={r2O} />
             <Circle cx={r1X} cy={BOT_Y - PADDLE_R} r={r1R} color={C.cyan} style="stroke" strokeWidth={r1W} opacity={r1O} />

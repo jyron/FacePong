@@ -1,11 +1,11 @@
 // Authoritative FacePong room. Runs the SAME physics engine the client uses for
-// CPU play (client/shared/engine.ts) at 60Hz; Colyseus patches state to clients
+// CPU play (android/shared/engine.ts) at 60Hz; Colyseus patches state to clients
 // at its default rate. Canonical frame: p1 = bottom, p2 = top. Each client
 // renders itself at the bottom by flipping Y when it is p2.
 import { Room, Client } from '@colyseus/core';
 import { PongState, Player } from '../schema/PongState';
-import { createEngineState, serve, step, type EngineState } from '../../../client/shared/engine';
-import { COURT, TARGET_SCORE, clampPaddleX, type Slot } from '../../../client/shared/constants';
+import { createEngineState, serve, step, type EngineState } from '../../../android/shared/engine';
+import { COURT, TARGET_SCORE, clampPaddleX, type Slot } from '../../../android/shared/constants';
 import { track } from '../analytics';
 
 const CX = COURT.W / 2;
@@ -15,7 +15,6 @@ export class PongRoom extends Room<PongState> {
 
   private engine: EngineState = createEngineState();
   private targets: Record<string, number> = {};
-  private faces: Partial<Record<Slot, string>> = {};
   private pointTimer: { clear: () => void } | undefined;
   private matchStartedAt = 0;
 
@@ -43,10 +42,11 @@ export class PongRoom extends Room<PongState> {
       if (!p || typeof msg?.data !== 'string') return;
       // Sanity caps: must look like an image data URI and fit comfortably
       // under the transport's 2MB maxPayload (see index.ts).
-      if (!msg.data.startsWith('data:image/') || msg.data.length > 1.5 * 1024 * 1024) return;
+      if (!msg.data.startsWith('data:image/') || msg.data.length > 700 * 1024) return;
       p.hasFace = true;
-      this.faces[p.slot as Slot] = msg.data;
-      this.broadcast('face', { slot: p.slot, data: msg.data }, { except: client });
+      // Carry the cutout in room state so it syncs to the opponent (including a
+      // late joiner) automatically — no message broadcast / re-send needed.
+      p.faceData = msg.data;
     });
 
     this.setSimulationInterval(() => this.update(), 1000 / 60);
@@ -73,11 +73,6 @@ export class PongRoom extends Room<PongState> {
     this.state.players.set(client.sessionId, p);
     this.targets[client.sessionId] = CX;
 
-    // hand the newcomer any face the opponent already submitted
-    for (const s of ['p1', 'p2'] as Slot[]) {
-      if (s !== slot && this.faces[s]) client.send('face', { slot: s, data: this.faces[s] });
-    }
-
     if (this.state.players.size === 2) this.startMatch();
   }
 
@@ -89,8 +84,6 @@ export class PongRoom extends Room<PongState> {
         duration_s: Math.floor((Date.now() - this.matchStartedAt) / 1000),
       });
     }
-    const leaver = this.state.players.get(client.sessionId);
-    if (leaver) delete this.faces[leaver.slot as Slot];
     this.state.players.delete(client.sessionId);
     delete this.targets[client.sessionId];
     if (this.pointTimer) this.pointTimer.clear();

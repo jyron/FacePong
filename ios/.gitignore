@@ -1,0 +1,16 @@
+# Build artifacts (regenerate with tools/sim.sh / xcodebuild)
+.build/
+.build-dev/
+.build-archive/
+build/
+DerivedData/
+
+# Xcode user state
+*.xcuserstate
+xcuserdata/
+*.xcuserdatad/
+
+.DS_Store
+
+# Compiled helper binary (rebuild from tools/facecutout.swift)
+tools/facecutout

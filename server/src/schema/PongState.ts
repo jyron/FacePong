@@ -1,5 +1,5 @@
 // Authoritative Colyseus state. Field names mirror NetStateShape /
-// NetPlayerShape in the shared protocol (client/shared/protocol.ts) so the
+// NetPlayerShape in the shared protocol (android/shared/protocol.ts) so the
 // client reads them by the same names. Uses defineTypes (functional API) to
 // avoid decorator build configuration.
 import { Schema, MapSchema, defineTypes } from '@colyseus/schema';
@@ -11,6 +11,7 @@ export class Player extends Schema {
   score = 0;
   name = 'Player';
   hasFace = false;
+  faceData = ''; // the player's segmented face cutout (data:image/png URI)
 }
 defineTypes(Player, {
   sessionId: 'string',
@@ -19,6 +20,7 @@ defineTypes(Player, {
   score: 'number',
   name: 'string',
   hasFace: 'boolean',
+  faceData: 'string',
 });
 
 export class PongState extends Schema {

@@ -1,9 +1,14 @@
 import http from 'http';
 import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
+import { Encoder } from '@colyseus/schema';
 import { PongRoom } from './rooms/PongRoom';
 
 const port = Number(process.env.PORT) || 2567;
+
+// Players carry their face cutout (a data: URI) in room state; the default schema
+// encode buffer is far too small for that, so size it to hold two capped faces.
+Encoder.BUFFER_SIZE = 2 * 1024 * 1024;
 
 // Plain HTTP server so Railway's health check on "/" gets a 200.
 const httpServer = http.createServer((req, res) => {

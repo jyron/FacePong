@@ -122,9 +122,33 @@ export function usePongEngine(onScore: (slot: Slot) => void): PongEngine {
   const t17y = useSharedValue(CY);
   const t18y = useSharedValue(CY);
   const t19y = useSharedValue(CY);
+  const t20x = useSharedValue(CX);
+  const t21x = useSharedValue(CX);
+  const t22x = useSharedValue(CX);
+  const t23x = useSharedValue(CX);
+  const t24x = useSharedValue(CX);
+  const t25x = useSharedValue(CX);
+  const t26x = useSharedValue(CX);
+  const t27x = useSharedValue(CX);
+  const t28x = useSharedValue(CX);
+  const t29x = useSharedValue(CX);
+  const t30x = useSharedValue(CX);
+  const t31x = useSharedValue(CX);
+  const t20y = useSharedValue(CY);
+  const t21y = useSharedValue(CY);
+  const t22y = useSharedValue(CY);
+  const t23y = useSharedValue(CY);
+  const t24y = useSharedValue(CY);
+  const t25y = useSharedValue(CY);
+  const t26y = useSharedValue(CY);
+  const t27y = useSharedValue(CY);
+  const t28y = useSharedValue(CY);
+  const t29y = useSharedValue(CY);
+  const t30y = useSharedValue(CY);
+  const t31y = useSharedValue(CY);
   // Arrays are built at render time only (for Skia's render map) — not captured by worklets.
-  const trailX = [t0x, t1x, t2x, t3x, t4x, t5x, t6x, t7x, t8x, t9x, t10x, t11x, t12x, t13x, t14x, t15x, t16x, t17x, t18x, t19x];
-  const trailY = [t0y, t1y, t2y, t3y, t4y, t5y, t6y, t7y, t8y, t9y, t10y, t11y, t12y, t13y, t14y, t15y, t16y, t17y, t18y, t19y];
+  const trailX = [t0x, t1x, t2x, t3x, t4x, t5x, t6x, t7x, t8x, t9x, t10x, t11x, t12x, t13x, t14x, t15x, t16x, t17x, t18x, t19x, t20x, t21x, t22x, t23x, t24x, t25x, t26x, t27x, t28x, t29x, t30x, t31x];
+  const trailY = [t0y, t1y, t2y, t3y, t4y, t5y, t6y, t7y, t8y, t9y, t10y, t11y, t12y, t13y, t14y, t15y, t16y, t17y, t18y, t19y, t20y, t21y, t22y, t23y, t24y, t25y, t26y, t27y, t28y, t29y, t30y, t31y];
 
   const onScoreRef = useRef(onScore);
   onScoreRef.current = onScore;
@@ -199,6 +223,30 @@ export function usePongEngine(onScore: (slot: Slot) => void): PongEngine {
     }
 
     // trail shift — individual SVs (oldest first)
+    t31x.value = t30x.value;
+    t31y.value = t30y.value;
+    t30x.value = t29x.value;
+    t30y.value = t29y.value;
+    t29x.value = t28x.value;
+    t29y.value = t28y.value;
+    t28x.value = t27x.value;
+    t28y.value = t27y.value;
+    t27x.value = t26x.value;
+    t27y.value = t26y.value;
+    t26x.value = t25x.value;
+    t26y.value = t25y.value;
+    t25x.value = t24x.value;
+    t25y.value = t24y.value;
+    t24x.value = t23x.value;
+    t24y.value = t23y.value;
+    t23x.value = t22x.value;
+    t23y.value = t22y.value;
+    t22x.value = t21x.value;
+    t22y.value = t21y.value;
+    t21x.value = t20x.value;
+    t21y.value = t20y.value;
+    t20x.value = t19x.value;
+    t20y.value = t19y.value;
     t19x.value = t18x.value;
     t19y.value = t18y.value;
     t18x.value = t17x.value;
@@ -265,10 +313,16 @@ export function usePongEngine(onScore: (slot: Slot) => void): PongEngine {
       t5x.value = CX; t6x.value = CX; t7x.value = CX; t8x.value = CX; t9x.value = CX;
       t10x.value = CX; t11x.value = CX; t12x.value = CX; t13x.value = CX; t14x.value = CX;
       t15x.value = CX; t16x.value = CX; t17x.value = CX; t18x.value = CX; t19x.value = CX;
+      t20x.value = CX; t21x.value = CX; t22x.value = CX; t23x.value = CX; t24x.value = CX;
+      t25x.value = CX; t26x.value = CX; t27x.value = CX; t28x.value = CX; t29x.value = CX;
+      t30x.value = CX; t31x.value = CX;
       t0y.value = CY; t1y.value = CY; t2y.value = CY; t3y.value = CY; t4y.value = CY;
       t5y.value = CY; t6y.value = CY; t7y.value = CY; t8y.value = CY; t9y.value = CY;
       t10y.value = CY; t11y.value = CY; t12y.value = CY; t13y.value = CY; t14y.value = CY;
       t15y.value = CY; t16y.value = CY; t17y.value = CY; t18y.value = CY; t19y.value = CY;
+      t20y.value = CY; t21y.value = CY; t22y.value = CY; t23y.value = CY; t24y.value = CY;
+      t25y.value = CY; t26y.value = CY; t27y.value = CY; t28y.value = CY; t29y.value = CY;
+      t30y.value = CY; t31y.value = CY;
       running.value = true;
     })(vyDir, vxr);
   };
@@ -286,16 +340,22 @@ export function usePongEngine(onScore: (slot: Slot) => void): PongEngine {
     runOnUI(() => {
       'worklet';
       running.value = false;
-      ballX.value = 150; ballY.value = 560;
-      p1x.value = 132; p2x.value = 250;
-      t0x.value = 150; t1x.value = 176; t2x.value = 200; t3x.value = 222; t4x.value = 244;
-      t5x.value = 264; t6x.value = 282; t7x.value = 298; t8x.value = 312; t9x.value = 324;
-      t10x.value = 334; t11x.value = 342; t12x.value = 349; t13x.value = 355; t14x.value = 360;
-      t15x.value = 364; t16x.value = 367; t17x.value = 369; t18x.value = 370; t19x.value = 371;
-      t0y.value = 560; t1y.value = 512; t2y.value = 470; t3y.value = 432; t4y.value = 398;
-      t5y.value = 368; t6y.value = 342; t7y.value = 320; t8y.value = 302; t9y.value = 288;
-      t10y.value = 276; t11y.value = 266; t12y.value = 258; t13y.value = 252; t14y.value = 247;
-      t15y.value = 243; t16y.value = 240; t17y.value = 238; t18y.value = 237; t19y.value = 236;
+      ballX.value = 196; ballY.value = 300;
+      p1x.value = 250; p2x.value = 196;
+      t0x.value = 196; t1x.value = 193; t2x.value = 191; t3x.value = 188; t4x.value = 187;
+      t5x.value = 185; t6x.value = 184; t7x.value = 183; t8x.value = 182; t9x.value = 182;
+      t10x.value = 182; t11x.value = 182; t12x.value = 182; t13x.value = 183; t14x.value = 184;
+      t15x.value = 186; t16x.value = 187; t17x.value = 189; t18x.value = 192; t19x.value = 194;
+      t20x.value = 197; t21x.value = 201; t22x.value = 204; t23x.value = 208; t24x.value = 212;
+      t25x.value = 217; t26x.value = 222; t27x.value = 227; t28x.value = 232; t29x.value = 238;
+      t30x.value = 244; t31x.value = 250;
+      t0y.value = 300; t1y.value = 311; t2y.value = 322; t3y.value = 333; t4y.value = 344;
+      t5y.value = 355; t6y.value = 367; t7y.value = 378; t8y.value = 389; t9y.value = 401;
+      t10y.value = 412; t11y.value = 423; t12y.value = 435; t13y.value = 446; t14y.value = 458;
+      t15y.value = 470; t16y.value = 481; t17y.value = 493; t18y.value = 505; t19y.value = 517;
+      t20y.value = 529; t21y.value = 540; t22y.value = 552; t23y.value = 564; t24y.value = 576;
+      t25y.value = 589; t26y.value = 601; t27y.value = 613; t28y.value = 625; t29y.value = 637;
+      t30y.value = 650; t31y.value = 662;
     })();
   };
 
