@@ -19,14 +19,21 @@ struct PointView: View {
                     .neonGlow(localScored ? Color(hex: "#d4ff3d") : Color(hex: "#ff2e88"), radius: 26, strong: true)
 
                 HStack(spacing: 10) {
-                    Text(localScored ? "YOU" : "CPU").font(.bodyBold(14)).foregroundStyle(Color(hex: "#a59fce"))
-                    Text("+1").font(.display(16)).foregroundStyle(localScored ? Color(hex: "#19e7ff") : Color(hex: "#ff2e88"))
+                    Text(localScored ? "YOU" : model.opponentName).font(.bodyBold(14)).foregroundStyle(Color(hex: "#a59fce"))
+                    Text(localScored ? "POP A HEART" : "LOST A HEART")
+                        .font(.bodyBold(12)).tracking(1)
+                        .foregroundStyle(localScored ? Color(hex: "#19e7ff") : Color(hex: "#ff2e88"))
                 }
 
-                HStack(spacing: 14) {
-                    FaceCoin(image: model.p1Face, slot: .p1, size: 34)
-                    Text("\(model.score1) · \(model.score2)").font(.display(28)).foregroundStyle(Color(hex: "#f3f1ff"))
-                    FaceCoin(image: model.p2Face, slot: .p2, size: 34)
+                VStack(spacing: 10) {
+                    HStack(spacing: 12) {
+                        FaceCoin(image: model.opponentFace, slot: .p2, size: 30)
+                        HeartsRow(remaining: max(0, GC.startingHearts - model.score1), color: Color(hex: "#ff2e88"))
+                    }
+                    HStack(spacing: 12) {
+                        FaceCoin(image: model.p1Face, slot: .p1, size: 30)
+                        HeartsRow(remaining: max(0, GC.startingHearts - model.score2), color: Color(hex: "#19e7ff"))
+                    }
                 }
 
                 Text(serveText).font(.body(13)).foregroundStyle(Color(hex: "#6a6496"))
@@ -47,7 +54,7 @@ struct PointView: View {
 
     private var serveText: String {
         let nextLeaderClose = max(model.score1, model.score2) == GC.targetScore - 1
-        if nextLeaderClose { return "Match point next" }
-        return localScored ? "YOU serve next" : "CPU serves next"
+        if nextLeaderClose { return "Match point — one heart left" }
+        return localScored ? "YOU serve next" : "\(model.opponentName) serves next"
     }
 }

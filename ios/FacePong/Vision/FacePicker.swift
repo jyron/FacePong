@@ -66,8 +66,16 @@ private struct CameraPickerView: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
-        picker.sourceType = .camera
-        picker.cameraDevice = .front
+        // Guard camera availability: presenting sourceType = .camera on a device with
+        // no available camera (Simulator, "iPhone app on Mac", or a restricted review
+        // device) throws NSInvalidArgumentException and crashes the app — the App Store
+        // reviewer hits this the moment they try to add a face. Fall back to the library.
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            picker.sourceType = .camera
+            picker.cameraDevice = .front
+        } else {
+            picker.sourceType = .photoLibrary
+        }
         picker.allowsEditing = true
         picker.delegate = context.coordinator
         return picker

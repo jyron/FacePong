@@ -25,15 +25,32 @@ struct StepResult {
 struct PongEngine {
     var s = EngineState()
 
+    // Per-instance difficulty tuning. Defaults equal the global GC bases, so any engine
+    // that never sets them (the online/attract paths, the Colyseus server) is byte-
+    // identical to before. localCPU overrides these from the active Difficulty.
+    var maxSpeed: CGFloat = GC.maxSpeed
+    var rallyRamp: CGFloat = GC.rallyRamp
+    var serveVY: CGFloat = GC.serveVY
+    var serveVXSpread: CGFloat = GC.serveVXSpread
+    var p2CoverR: CGFloat = GC.paddleR   // CPU (top) effective collision half-width — its "reach"
+
+    /// Restore default (full-strength) tuning. Call before online/attract serves so a
+    /// prior localCPU difficulty can't leak into them.
+    mutating func resetTuning() {
+        maxSpeed = GC.maxSpeed
+        rallyRamp = GC.rallyRamp
+        serveVY = GC.serveVY
+        serveVXSpread = GC.serveVXSpread
+        p2CoverR = GC.paddleR
+    }
+
     mutating func serve(toward: Slot) {
         s.ballX = Court.W / 2
         s.ballY = Court.H / 2
-        s.vx = (CGFloat.random(in: 0..<1) * 2 - 1) * GC.serveVXSpread
-        s.vy = toward == .p1 ? GC.serveVY : -GC.serveVY
+        s.vx = (CGFloat.random(in: 0..<1) * 2 - 1) * serveVXSpread
+        s.vy = toward == .p1 ? serveVY : -serveVY
         s.rally = 0
     }
-
-    func aiTargetX() -> CGFloat { clampPaddleX(s.ballX) }
 
     // Advance the ball exactly one fixed tick using the current paddle centers.
     mutating func step() -> StepResult {
@@ -53,12 +70,14 @@ struct PongEngine {
             r.wallHit = true
         }
 
-        // top paddle (p2) — ball travelling up
+        // top paddle (p2) — ball travelling up. p2CoverR (the CPU's reach) gates whether
+        // contact registers; the bounce angle still uses the true paddleR so the geometry
+        // a player aims into is unchanged.
         if s.vy < 0 && s.ballY - GC.ballR < GC.topY + GC.paddleR && s.ballY - GC.ballR > GC.topY - GC.paddleR {
             let dx = s.ballX - s.p2x
-            if abs(dx) < GC.paddleR + GC.ballR {
+            if abs(dx) < p2CoverR + GC.ballR {
                 s.ballY = 2 * (GC.topY + GC.paddleR + GC.ballR) - s.ballY
-                s.vy = abs(s.vy) * GC.rallyRamp
+                s.vy = abs(s.vy) * rallyRamp
                 s.vx = (dx / GC.paddleR) * GC.paddleBounce
                 s.rally += 1
                 r.paddleHit = .p2
@@ -70,7 +89,7 @@ struct PongEngine {
             let dx = s.ballX - s.p1x
             if abs(dx) < GC.paddleR + GC.ballR {
                 s.ballY = 2 * (GC.botY - GC.paddleR - GC.ballR) - s.ballY
-                s.vy = -abs(s.vy) * GC.rallyRamp
+                s.vy = -abs(s.vy) * rallyRamp
                 s.vx = (dx / GC.paddleR) * GC.paddleBounce
                 s.rally += 1
                 r.paddleHit = .p1
@@ -86,9 +105,9 @@ struct PongEngine {
 
         // clamp speed
         let sp = (s.vx * s.vx + s.vy * s.vy).squareRoot()
-        if sp > GC.maxSpeed {
-            s.vx *= GC.maxSpeed / sp
-            s.vy *= GC.maxSpeed / sp
+        if sp > maxSpeed {
+            s.vx *= maxSpeed / sp
+            s.vy *= maxSpeed / sp
         }
 
         return r

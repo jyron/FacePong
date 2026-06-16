@@ -12,14 +12,7 @@ struct PlayHUD: View {
             HStack(alignment: .top) {
                 playerTag(slot: .p2, name: model.opponentName, trailing: false)
                 Spacer()
-                VStack(spacing: 6) {
-                    HStack(spacing: 8) {
-                        Text("\(model.score1)").font(.display(26)).foregroundStyle(Color(hex: "#19e7ff"))
-                        Text("·").font(.display(22)).foregroundStyle(Color(hex: "#6a6496"))
-                        Text("\(model.score2)").font(.display(26)).foregroundStyle(Color(hex: "#ff2e88"))
-                    }
-                    NeonPill(text: "RALLY · \(model.liveRally)")
-                }
+                NeonPill(text: "RALLY · \(model.liveRally)")
                 Spacer()
                 playerTag(slot: .p1, name: "YOU", trailing: true)
             }
@@ -45,9 +38,15 @@ struct PlayHUD: View {
 
     @ViewBuilder private func playerTag(slot: Slot, name: String, trailing: Bool) -> some View {
         let coin = FaceCoin(image: slot == .p1 ? model.p1Face : model.opponentFace, slot: slot, size: 38)
-        HStack(spacing: 8) {
-            if trailing { Text(name).font(.bodyBold(12)).foregroundStyle(Color(hex: "#a59fce")); coin }
-            else { coin; Text(name).font(.bodyBold(12)).foregroundStyle(Color(hex: "#a59fce")) }
+        // hearts = startingHearts minus the points this side has CONCEDED (the rival's score)
+        let hearts = GC.startingHearts - (slot == .p1 ? model.score2 : model.score1)
+        let color = Color(hex: slot == .p1 ? "#19e7ff" : "#ff2e88")
+        VStack(alignment: trailing ? .trailing : .leading, spacing: 5) {
+            HStack(spacing: 8) {
+                if trailing { Text(name).font(.bodyBold(12)).foregroundStyle(Color(hex: "#a59fce")); coin }
+                else { coin; Text(name).font(.bodyBold(12)).foregroundStyle(Color(hex: "#a59fce")) }
+            }
+            HeartsRow(remaining: max(0, hearts), color: color, size: 13)
         }
     }
 

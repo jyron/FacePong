@@ -29,10 +29,15 @@ struct MatchView: View {
 
             Text(youWon ? "YOU WIN" : "YOU LOSE").font(.display(20))
                 .foregroundStyle(youWon ? Color(hex: "#d4ff3d") : Color(hex: "#ff2e88"))
-            HStack(spacing: 10) {
-                Text("\(model.score1)").font(.display(34)).foregroundStyle(Color(hex: "#19e7ff"))
-                Text("·").font(.display(28)).foregroundStyle(Color(hex: "#6a6496"))
-                Text("\(model.score2)").font(.display(34)).foregroundStyle(Color(hex: "#ff2e88"))
+            VStack(spacing: 8) {
+                HStack(spacing: 10) {
+                    Text("YOU").font(.bodyBold(11)).frame(width: 64, alignment: .trailing).foregroundStyle(Color(hex: "#a59fce"))
+                    HeartsRow(remaining: max(0, GC.startingHearts - model.score2), color: Color(hex: "#19e7ff"), size: 17)
+                }
+                HStack(spacing: 10) {
+                    Text(model.opponentName).font(.bodyBold(11)).frame(width: 64, alignment: .trailing).foregroundStyle(Color(hex: "#a59fce"))
+                    HeartsRow(remaining: max(0, GC.startingHearts - model.score1), color: Color(hex: "#ff2e88"), size: 17)
+                }
             }
 
             HStack(spacing: 12) {

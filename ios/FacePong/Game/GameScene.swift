@@ -24,6 +24,8 @@ final class GameScene: SKScene {
 
     // ---- simulation ----
     private var engine = PongEngine()
+    var currentDifficulty = Difficulty.fair   // the active CPU opponent (localCPU only)
+    private var cpuBrain = CPUBrain()
     private var inputX: CGFloat = Court.W / 2
     private var acc: Double = 0
     private var lastTime: TimeInterval = 0
@@ -114,6 +116,7 @@ final class GameScene: SKScene {
         mode = .frozen
         running = false
         engine.s = EngineState()
+        engine.resetTuning()
         engine.s.p1x = inputX
         rally = 0
         primeTrail(at: Court.center)
@@ -231,8 +234,17 @@ final class GameScene: SKScene {
 
     // MARK: control
 
-    func startLocalCPU(toward: Slot = .p2) {
+    func startLocalCPU(toward: Slot = .p2, difficulty: Difficulty = .fair) {
         mode = .localCPU
+        currentDifficulty = difficulty
+        cpuBrain.difficulty = difficulty
+        cpuBrain.reset()
+        // Apply the opponent's ball pressure to THIS engine instance only.
+        engine.maxSpeed = GC.maxSpeed * difficulty.maxSpeedMul
+        engine.rallyRamp = 1 + (GC.rallyRamp - 1) * difficulty.rampMul
+        engine.serveVY = GC.serveVY * difficulty.serveVYMul
+        engine.serveVXSpread = GC.serveVXSpread * difficulty.serveVXSpreadMul
+        engine.p2CoverR = GC.paddleR * difficulty.coverage
         engine.serve(toward: toward)
         engine.s.p1x = inputX
         rally = 0
@@ -242,6 +254,7 @@ final class GameScene: SKScene {
 
     private func serveAttract() {
         mode = .attract
+        engine.resetTuning()
         engine.serve(toward: Bool.random() ? .p1 : .p2)
         running = true
         primeTrail(at: Court.center)
@@ -267,6 +280,7 @@ final class GameScene: SKScene {
         mode = .online
         running = false
         engine.s = EngineState()
+        engine.resetTuning()
         netPrevPhase = "waiting"; netPrevRally = 0
         inWallZone = false
         rally = 0
@@ -335,7 +349,7 @@ final class GameScene: SKScene {
             let lo = GC.paddleMargin, hi = Court.W - GC.paddleMargin
             while acc >= GC.tickMs {
                 acc -= GC.tickMs
-                // paddle control
+                // ---- bottom paddle (p1) ----
                 if mode == .localCPU {
                     var np1 = engine.s.p1x + (inputX - engine.s.p1x) * GC.inputFollow
                     np1 = min(max(np1, lo), hi)
@@ -349,10 +363,18 @@ final class GameScene: SKScene {
                     np1 = min(max(np1, lo), hi)
                     engine.s.p1x = np1
                 }
+                // ---- top paddle (p2 / the CPU opponent) ----
                 if promo {
                     let off = sin(ambientT * 1.9 + 2.1) * 30
                     engine.s.p2x = min(max(engine.s.ballX + off, lo), hi)
-                } else {
+                } else if mode == .localCPU {
+                    // Difficulty-driven brain: react with lag, predict the bounce, aim with
+                    // a per-rally error, and ease at the tier's track gain.
+                    cpuBrain.record(engine.s)
+                    let target = cpuBrain.target(engine.s)
+                    let k2: CGFloat = engine.s.vy < 0 ? currentDifficulty.trackGain : currentDifficulty.trackGainAway
+                    engine.s.p2x = min(max(engine.s.p2x + (target - engine.s.p2x) * k2, lo), hi)
+                } else { // attract: top paddle is the simple chaser
                     let k2: CGFloat = engine.s.vy < 0 ? GC.easeToward * 0.9 : GC.easeAway
                     var np2 = engine.s.p2x + (engine.s.ballX - engine.s.p2x) * k2
                     np2 = min(max(np2, lo), hi)
@@ -613,4 +635,68 @@ final class GameScene: SKScene {
 @inline(__always) func splashRnd(_ seed: CGFloat, _ i: Int, _ k: CGFloat) -> CGFloat {
     let v = sin(seed * 12.9898 + CGFloat(i) * 78.233 + k * 37.719) * 43758.5453
     return v - floor(v)
+}
+
+// MARK: CPU brain
+
+/// Drives the CPU (top) paddle's TARGET x from a Difficulty. Three things make it feel
+/// human instead of a perfect wall: it reacts to where the ball was `reactionTicks` ago
+/// (a ring buffer), it can predict the wall-mirrored intercept instead of just chasing
+/// the live ball, and it mis-aims by a fixed offset re-rolled once per rally. The caller
+/// eases the paddle toward this target at the tier's trackGain, and the engine's p2CoverR
+/// decides whether a near-miss actually connects.
+struct CPUBrain {
+    var difficulty = Difficulty.fair
+    private var hist: [EngineState] = []
+    private let cap = 40
+    private var lastRally = -999
+    private var rallyError: CGFloat = 0
+
+    mutating func reset() { hist.removeAll(keepingCapacity: true); lastRally = -999; rallyError = 0 }
+
+    /// Push the current ball state and (re-)seed the aim error once per rally.
+    mutating func record(_ s: EngineState) {
+        if s.rally != lastRally {
+            lastRally = s.rally
+            let e = difficulty.aimErrorUnits
+            rallyError = e <= 0 ? 0 : CGFloat.random(in: -e...e)
+        }
+        hist.append(s)
+        if hist.count > cap { hist.removeFirst(hist.count - cap) }
+    }
+
+    /// The clamped x the paddle should move toward this tick.
+    func target(_ now: EngineState) -> CGFloat {
+        let s = delayed(now)
+        var t = s.ballX
+        if difficulty.predict > 0 && s.vy < 0 {
+            t = s.ballX * (1 - difficulty.predict) + CPUBrain.interceptX(s) * difficulty.predict
+        }
+        return clampPaddleX(t + rallyError)
+    }
+
+    /// The ball state `reactionTicks` ago (or the oldest we have early in a rally).
+    private func delayed(_ now: EngineState) -> EngineState {
+        let d = difficulty.reactionTicks
+        if d <= 0 || hist.isEmpty { return now }
+        let i = hist.count - 1 - d
+        return i >= 0 ? hist[i] : (hist.first ?? now)
+    }
+
+    /// Where the ball will cross the CPU's contact plane, mirroring off the side walls —
+    /// the same wall geometry the engine uses, so the prediction is exact.
+    static func interceptX(_ s: EngineState) -> CGFloat {
+        let targetY = GC.topY + GC.paddleR
+        guard s.vy < 0, s.ballY > targetY else { return s.ballX }
+        let dt = (s.ballY - targetY) / (-s.vy)
+        let x = s.ballX + s.vx * dt
+        let lo = GC.ballR + GC.wallPad
+        let hi = Court.W - GC.ballR - GC.wallPad
+        let span = hi - lo
+        guard span > 0 else { return clampPaddleX(x) }
+        var t = (x - lo).truncatingRemainder(dividingBy: 2 * span)
+        if t < 0 { t += 2 * span }
+        if t > span { t = 2 * span - t }
+        return lo + t
+    }
 }

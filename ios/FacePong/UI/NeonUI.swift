@@ -111,6 +111,28 @@ struct NeonPill: View {
     }
 }
 
+// MARK: hearts
+
+/// A row of heart pips showing a player's remaining hearts (filled) out of the total
+/// (dim outlines). The match's live state at a glance — drains one per conceded point.
+struct HeartsRow: View {
+    var remaining: Int
+    var total: Int = GC.startingHearts
+    var color: Color
+    var size: CGFloat = 15
+
+    var body: some View {
+        HStack(spacing: size * 0.22) {
+            ForEach(0..<total, id: \.self) { i in
+                Image(systemName: i < remaining ? "heart.fill" : "heart")
+                    .font(.system(size: size, weight: .bold))
+                    .foregroundStyle(i < remaining ? color : Color(hex: "#3a3658"))
+                    .neonGlow(i < remaining ? color : .clear, radius: size * 0.4)
+            }
+        }
+    }
+}
+
 // MARK: face coin / card
 
 /// Circular neon coin (HUD, point/match screens). Shows a cutout, or a default disc.

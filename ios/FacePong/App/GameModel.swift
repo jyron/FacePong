@@ -36,6 +36,7 @@ final class GameModel: ObservableObject, GameSceneDelegate {
     @Published var showOnlineShare = false
 
     let scene = GameScene()
+    var cpuDifficulty: Difficulty = .fair   // active VS COMPUTER opponent strength
     private var pendingServe: Slot = .p2
     private var matchStart = Date()
 
@@ -53,7 +54,9 @@ final class GameModel: ObservableObject, GameSceneDelegate {
         scene.scaleMode = .aspectFit
         scene.size = CGSize(width: Court.W, height: Court.H)
         loadPersisted()
-        Sound.prepare()
+        // Defer audio engine + buffer loading off the synchronous launch path (8 WAV
+        // loads + AVAudioEngine.start) so nothing heavy runs before the first frame.
+        DispatchQueue.main.async { Sound.prepare() }
         #if DEBUG
         #if targetEnvironment(simulator)
         // The Simulator can't run Vision, so preload real cutouts to exercise the
@@ -102,7 +105,7 @@ final class GameModel: ObservableObject, GameSceneDelegate {
 
     // The opponent (online = the networked rival; offline = the CPU pick).
     var opponentFace: UIImage? { online ? oppFace : p2Face }
-    var opponentName: String { online ? (oppName.isEmpty ? "RIVAL" : oppName) : "CPU" }
+    var opponentName: String { online ? (oppName.isEmpty ? "RIVAL" : oppName) : cpuDifficulty.name }
 
     var elapsed: TimeInterval { Date().timeIntervalSince(matchStart) }
     var elapsedString: String {
@@ -130,7 +133,8 @@ final class GameModel: ObservableObject, GameSceneDelegate {
 
     // MARK: flow
 
-    func startCPU() {
+    func startCPU(difficulty: Difficulty = .fair) {
+        cpuDifficulty = difficulty
         scene.resetScores()
         score1 = 0; score2 = 0; roundNum = 1; topRally = 0; aces = 0
         matchStart = Date()
@@ -147,7 +151,7 @@ final class GameModel: ObservableObject, GameSceneDelegate {
 
     /// Called by RoundView when the 3-2-1 countdown finishes.
     func beginPlay() {
-        scene.startLocalCPU(toward: pendingServe)
+        scene.startLocalCPU(toward: pendingServe, difficulty: cpuDifficulty)
         route = .play
     }
 

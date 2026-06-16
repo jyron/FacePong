@@ -2,6 +2,7 @@
 // cards (tap to set your face via camera/library → Vision cutout), the three
 // mode buttons, and the longest-rally best.
 import SwiftUI
+import UIKit
 
 extension FacePickerSource: Identifiable {
     public var id: Int { self == .camera ? 0 : 1 }
@@ -22,7 +23,7 @@ struct StartView: View {
                 Text("PONG").font(.display(56)).foregroundStyle(Color(hex: "#ff2e88")).neonGlow(Color(hex: "#ff2e88"), radius: 22, strong: true)
             }
 
-            NeonPill(text: "🏓  BEST OF 5 · YOUR FACE IS THE PADDLE")
+            NeonPill(text: "🏓  5 HEARTS · YOUR FACE IS THE PADDLE")
 
             HStack(spacing: 18) {
                 faceColumn(.p1)
@@ -49,7 +50,11 @@ struct StartView: View {
         .overlay { if model.processingFace { ProcessingOverlay() } }
         .confirmationDialog("Set \(pickingSlot == .p1 ? "your" : "the opponent's") face",
                             isPresented: $showSource, titleVisibility: .visible) {
-            Button("Take a selfie") { source = .camera }
+            // Only offer the camera when one is actually available (it isn't on the
+            // Simulator / Mac / camera-restricted review devices).
+            if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                Button("Take a selfie") { source = .camera }
+            }
             Button("Choose a photo") { source = .library }
             Button("Cancel", role: .cancel) {}
         }
