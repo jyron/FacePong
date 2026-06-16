@@ -1,17 +1,21 @@
-// FaceCutout.swift — ported from tools/facecutout.swift (macOS harness).
+// FaceCutout.swift — turns a selfie into a head-only paddle texture.
 //
-// Runs Apple Vision's face-rectangle detection and foreground-instance-mask
-// request to produce a square, feathered head cutout suitable for use as an
-// SKSpriteNode texture (the paddle).
+// PRIMARY path: MODNet (a portrait-matting CNN, bundled as MODNetMatte.mlmodelc)
+// produces a true alpha matte with hair-strand detail. We crop to the head first
+// (Vision face rectangle) so the head fills MODNet's 512px frame at full
+// resolution, then matte, then feather the sides/bottom into the dark court.
 //
-// NOTE: VNGenerateForegroundInstanceMaskRequest requires a real device; it is
-// not available in the iOS Simulator and will throw there. That is expected.
+// FALLBACK path: Apple's VNGenerateForegroundInstanceMaskRequest (subject lift).
+// Used only if the Core ML model can't load or run. NOTE: that request requires a
+// real device. MODNet (Core ML) runs in the Simulator too, so the primary path is
+// testable in the Simulator via FP_VISION_TEST=1.
 //
 // Usage:
 //   let paddle = try await FaceCutout.cutout(from: selfieImage)
 
 import UIKit
 import Vision
+import CoreML
 import CoreImage
 import CoreImage.CIFilterBuiltins
 
@@ -23,6 +27,8 @@ public enum FaceCutoutError: Error, CustomStringConvertible {
     case noFace
     /// Vision produced no foreground instance mask.
     case noForeground
+    /// The MODNet Core ML model could not be loaded or run — caller falls back.
+    case modelUnavailable
     /// A Vision request failed. The wrapped error carries the underlying cause.
     case visionFailed(Error)
 
@@ -30,6 +36,7 @@ public enum FaceCutoutError: Error, CustomStringConvertible {
         switch self {
         case .noFace:        return "FaceCutout: no face detected — prompt user to retake"
         case .noForeground:  return "FaceCutout: foreground instance mask unavailable (real device required)"
+        case .modelUnavailable: return "FaceCutout: MODNet Core ML model unavailable — falling back"
         case .visionFailed(let e): return "FaceCutout: Vision request failed — \(e)"
         }
     }
@@ -40,35 +47,125 @@ public enum FaceCutoutError: Error, CustomStringConvertible {
 /// Provides on-device face segmentation for FacePong's head-as-paddle mechanic.
 public enum FaceCutout {
 
-    /// Produces a ~512 px square, transparent-background UIImage of the
-    /// largest detected face, head-focused and feathered on the bottom and
-    /// sides so the silhouette dissolves into the dark court.
+    /// Produces a ~512 px square, transparent-background UIImage of the largest
+    /// detected face, head-focused and feathered on the bottom and sides so the
+    /// silhouette dissolves into the dark court.
     ///
-    /// - Parameter image: A UIImage from the camera or photo library.
-    ///   Any orientation is accepted; it is normalised to `.up` internally.
-    /// - Returns: A square UIImage with a transparent background, ready to
-    ///   pass to `SKTexture(image:)`.
-    /// - Throws: `FaceCutoutError` on any failure. There is no silent fallback;
-    ///   the caller must surface a retake prompt on error.
+    /// Tries MODNet first (best edges, runs in Simulator + device). If the model
+    /// is unavailable, falls back to Apple's subject-lift matte (device only).
+    ///
+    /// - Throws: `FaceCutoutError` on any failure. There is no silent fallback to
+    ///   a placeholder; the caller must surface a retake prompt on error.
     public static func cutout(from image: UIImage) async throws -> UIImage {
         try await Task.detached(priority: .userInitiated) {
-            try _cutout(from: image)
+            do {
+                return try _cutoutMODNet(from: image)
+            } catch FaceCutoutError.modelUnavailable {
+                NSLog("FaceCutout: MODNet unavailable, using Apple foreground mask")
+                return try _cutoutApple(from: image)
+            }
         }.value
     }
 }
 
-// MARK: - Implementation (off main thread)
+// MARK: - MODNet (cached model)
 
-private func _cutout(from image: UIImage) throws -> UIImage {
-    // 1. Normalise orientation — Vision expects the pixel data to read top-left.
-    //    Drawing into a new CGContext bakes the UIImage orientation transforms in.
-    guard let cgNorm = normalisedCGImage(from: image) else {
-        throw FaceCutoutError.noFace  // can't decode → nothing to work with
+private enum MODNet {
+    /// Loaded once, lazily. nil if the compiled model isn't in the bundle.
+    static let vnModel: VNCoreMLModel? = {
+        guard let url = Bundle.main.url(forResource: "MODNetMatte", withExtension: "mlmodelc") else {
+            NSLog("FaceCutout: MODNetMatte.mlmodelc not found in bundle")
+            return nil
+        }
+        let cfg = MLModelConfiguration()
+        cfg.computeUnits = .all
+        do {
+            let model = try MLModel(contentsOf: url, configuration: cfg)
+            return try VNCoreMLModel(for: model)
+        } catch {
+            NSLog("FaceCutout: failed to load MODNet — \(error)")
+            return nil
+        }
+    }()
+}
+
+// MARK: - Primary implementation (MODNet, off main thread)
+
+private func _cutoutMODNet(from image: UIImage) throws -> UIImage {
+    guard let cgNorm = normalisedCGImage(from: image) else { throw FaceCutoutError.noFace }
+    let W = CGFloat(cgNorm.width), H = CGFloat(cgNorm.height)
+
+    // 1. Find the head to frame the crop. Distinguish two failure modes:
+    //    - detection can't RUN (e.g. Simulator has no Vision inference context, or
+    //      a transient infra error) → fall back to a centered crop rather than
+    //      blocking a valid selfie;
+    //    - detection runs but finds NO face → .noFace so the caller prompts a retake.
+    let faceReq = VNDetectFaceRectanglesRequest()
+    let handler = VNImageRequestHandler(cgImage: cgNorm, orientation: .up, options: [:])
+    var detectionRan = true
+    do { try handler.perform([faceReq]) } catch { detectionRan = false }
+
+    // 2. Head-focused square crop (Vision bbox is normalised, bottom-left origin).
+    let crop: CGRect
+    if detectionRan {
+        guard let face = (faceReq.results ?? []).max(by: {
+            $0.boundingBox.width * $0.boundingBox.height < $1.boundingBox.width * $1.boundingBox.height
+        }) else { throw FaceCutoutError.noFace }
+        let fb = face.boundingBox
+        let fx = fb.minX * W, fy = fb.minY * H, fw = fb.width * W, fh = fb.height * H
+        let side = max(fw, fh) * 1.6
+        let cx = fx + fw / 2
+        let cy = (fy + fh / 2) + fh * 0.14        // nudge up toward the hair
+        crop = CGRect(x: cx - side / 2, y: cy - side / 2, width: side, height: side)
+    } else {
+        // Centered square biased slightly toward the top (where a head usually sits).
+        let side = min(W, H)
+        crop = CGRect(x: W / 2 - side / 2, y: H * 0.55 - side / 2, width: side, height: side)
     }
+    let side = crop.width
+
+    let ciContext = CIContext(options: [.useSoftwareRenderer: false])
+    let original = CIImage(cgImage: cgNorm)
+    // The head crop, translated to the origin. Out-of-bounds areas have no data.
+    let headCI = original
+        .cropped(to: crop)
+        .transformed(by: CGAffineTransform(translationX: -crop.minX, y: -crop.minY))
+    let squareRect = CGRect(x: 0, y: 0, width: side, height: side)
+
+    // 3. Render the square head to a CGImage to feed MODNet.
+    guard let headCG = ciContext.createCGImage(headCI, from: squareRect) else {
+        throw FaceCutoutError.modelUnavailable
+    }
+
+    // 4. Run MODNet → 512×512 grayscale alpha matte (white = keep).
+    guard let vnModel = MODNet.vnModel else { throw FaceCutoutError.modelUnavailable }
+    let req = VNCoreMLRequest(model: vnModel)
+    req.imageCropAndScaleOption = .scaleFill       // square in → square out, no distortion
+    let mh = VNImageRequestHandler(cgImage: headCG, orientation: .up, options: [:])
+    do { try mh.perform([req]) } catch { throw FaceCutoutError.modelUnavailable }
+    guard let obs = req.results?.first as? VNPixelBufferObservation else {
+        throw FaceCutoutError.modelUnavailable
+    }
+
+    // 5. Apply the matte as alpha (scale the 512 matte back to the crop size).
+    var matteCI = CIImage(cvPixelBuffer: obs.pixelBuffer)
+    let me = matteCI.extent
+    matteCI = matteCI.transformed(by: CGAffineTransform(scaleX: side / me.width, y: side / me.height))
+    let masked = headCI.applyingFilter("CIBlendWithMask", parameters: [
+        kCIInputBackgroundImageKey: CIImage.empty(),
+        kCIInputMaskImageKey: matteCI,
+    ])
+
+    return try featherAndRender(masked, side: side, ctx: ciContext)
+}
+
+// MARK: - Fallback implementation (Apple subject lift, device only)
+
+private func _cutoutApple(from image: UIImage) throws -> UIImage {
+    guard let cgNorm = normalisedCGImage(from: image) else { throw FaceCutoutError.noFace }
     let W = CGFloat(cgNorm.width)
     let H = CGFloat(cgNorm.height)
 
-    // 2. Build Vision requests.
     let faceReq = VNDetectFaceRectanglesRequest()
     guard #available(iOS 17.0, *) else {
         throw FaceCutoutError.visionFailed(
@@ -85,7 +182,6 @@ private func _cutout(from image: UIImage) throws -> UIImage {
         throw FaceCutoutError.visionFailed(error)
     }
 
-    // 3. Extract results — throw on missing data; no silent fallback.
     let faces = faceReq.results ?? []
     guard let maskObs = maskReq.results?.first else {
         throw FaceCutoutError.noForeground
@@ -96,7 +192,6 @@ private func _cutout(from image: UIImage) throws -> UIImage {
         throw FaceCutoutError.noFace
     }
 
-    // 4. Generate the scaled foreground matte (white = foreground, black = bg).
     let maskPixelBuffer: CVPixelBuffer
     do {
         maskPixelBuffer = try maskObs.generateScaledMaskForImage(
@@ -105,64 +200,57 @@ private func _cutout(from image: UIImage) throws -> UIImage {
         throw FaceCutoutError.visionFailed(error)
     }
 
-    // 5. Build CIImage pipeline.
-    //    CIImage + Vision both use bottom-left origin, so normalised Vision coords
-    //    map directly to CIImage pixel coords after multiplying by image dimensions.
     let ciContext = CIContext(options: [.useSoftwareRenderer: false])
     let original = CIImage(cgImage: cgNorm)
 
     var maskCI = CIImage(cvPixelBuffer: maskPixelBuffer)
-    // Scale mask to exactly match the original extent (can differ by a pixel).
     let ms = maskCI.extent
     if ms.width != W || ms.height != H {
         maskCI = maskCI.transformed(
             by: CGAffineTransform(scaleX: W / ms.width, y: H / ms.height))
     }
 
-    // Apply the matte as alpha: foreground preserved, background → transparent.
     let masked = original.applyingFilter("CIBlendWithMask", parameters: [
         kCIInputBackgroundImageKey: CIImage.empty(),
         kCIInputMaskImageKey: maskCI,
     ])
 
-    // 6. Compute head-focused square crop (same multipliers as the macOS tool).
-    //    Vision bounding box is normalised, bottom-left origin — convert to pixels.
     let fb = face.boundingBox
     let fx = fb.minX * W
     let fy = fb.minY * H
     let fw = fb.width  * W
     let fh = fb.height * H
 
-    // Square side: face box covers roughly the face; head + a bit of shoulder ≈ 1.6×.
     let side = max(fw, fh) * 1.6
-    // Centre horizontally on the face; nudge up toward hair (+y = up in CIImage).
     let cx = fx + fw / 2
     let cy = (fy + fh / 2) + fh * 0.14
     let crop = CGRect(x: cx - side / 2, y: cy - side / 2, width: side, height: side)
 
-    // Crop and translate to origin (out-of-bounds areas become transparent).
     let cropped = masked
         .cropped(to: crop)
         .transformed(by: CGAffineTransform(translationX: -crop.minX, y: -crop.minY))
-    let squareRect = CGRect(x: 0, y: 0, width: side, height: side)
 
-    // 7. Feather mask: bottom + sides fade to black, top stays crisp.
-    //    Blending the three linear gradients with .darken gives per-pixel min so
-    //    corners fade correctly. feather = side * 0.13 (matches macOS tool).
+    return try featherAndRender(cropped, side: side, ctx: ciContext)
+}
+
+// MARK: - Shared tail: feather + scale to 512
+
+/// Feathers the sides+bottom of a `side`×`side` masked head and renders it to a
+/// 512 px square UIImage. The top edge stays crisp (the hair is already matted).
+private func featherAndRender(_ headImg: CIImage, side: CGFloat, ctx: CIContext) throws -> UIImage {
     let featherCG = makeFeatherMask(side: side, feather: side * 0.13)
     let featherCI = CIImage(cgImage: featherCG)
-    let headImg = cropped.applyingFilter("CIBlendWithMask", parameters: [
+    let feathered = headImg.applyingFilter("CIBlendWithMask", parameters: [
         kCIInputBackgroundImageKey: CIImage.empty(),
         kCIInputMaskImageKey: featherCI,
     ])
 
-    // 8. Scale to the desired output size (~512 px) and render to UIImage.
     let outputSize: CGFloat = 512
     let scale = outputSize / side
-    let scaled = headImg.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+    let scaled = feathered.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
     let outputRect = CGRect(x: 0, y: 0, width: outputSize, height: outputSize)
 
-    guard let outCG = ciContext.createCGImage(scaled, from: outputRect) else {
+    guard let outCG = ctx.createCGImage(scaled, from: outputRect) else {
         throw FaceCutoutError.visionFailed(
             NSError(domain: "FaceCutout", code: 1,
                     userInfo: [NSLocalizedDescriptionKey: "CIContext render failed"]))
@@ -187,7 +275,6 @@ private func normalisedCGImage(from image: UIImage) -> CGImage? {
         bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
     ) else { return nil }
 
-    // UIKit coordinate system: origin top-left; flip to draw correctly.
     ctx.translateBy(x: 0, y: CGFloat(h))
     ctx.scaleBy(x: 1, y: -1)
     UIGraphicsPushContext(ctx)
@@ -198,13 +285,7 @@ private func normalisedCGImage(from image: UIImage) -> CGImage? {
 
 /// Builds a grayscale CGImage (white = keep, black = fade) with linear gradients
 /// fading the left, right, and bottom edges to black within `feather` points.
-/// The top edge stays fully white (crisp). `.darken` blend mode means the three
-/// gradients compete and the darkest wins — corners fade correctly without
-/// multiplying two separate passes.
-///
-/// - Parameters:
-///   - side: The pixel dimension of the square mask.
-///   - feather: The width of the fade region on the left, right, and bottom edges.
+/// The top edge stays fully white (crisp).
 private func makeFeatherMask(side: CGFloat, feather: CGFloat) -> CGImage {
     let w = Int(side)
     let h = Int(side)
@@ -216,7 +297,6 @@ private func makeFeatherMask(side: CGFloat, feather: CGFloat) -> CGImage {
         bitmapInfo: CGImageAlphaInfo.none.rawValue
     )!
 
-    // Fill solid white (full opacity).
     ctx.setFillColor(gray: 1, alpha: 1)
     ctx.fill(CGRect(x: 0, y: 0, width: side, height: side))
 
@@ -231,18 +311,14 @@ private func makeFeatherMask(side: CGFloat, feather: CGFloat) -> CGImage {
                    locations: [0, 1])!
     }
 
-    // Left edge: black at x=0, white at x=feather.
     ctx.drawLinearGradient(grad(),
                            start: CGPoint(x: 0,            y: side / 2),
                            end:   CGPoint(x: feather,      y: side / 2),
                            options: opts)
-    // Right edge: black at x=side, white at x=side-feather.
     ctx.drawLinearGradient(grad(),
                            start: CGPoint(x: side,         y: side / 2),
                            end:   CGPoint(x: side - feather, y: side / 2),
                            options: opts)
-    // Bottom edge: black at y=0, white at y=feather.
-    // (CGContext origin is bottom-left, so y=0 is the visual bottom.)
     ctx.drawLinearGradient(grad(),
                            start: CGPoint(x: side / 2, y: 0),
                            end:   CGPoint(x: side / 2, y: feather),
