@@ -18,7 +18,6 @@
 		58486648FF4695B7C87EC71A /* SpaceGrotesk-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = EFF1C90B8C2D0C5D4709B12F /* SpaceGrotesk-Bold.ttf */; };
 		5BD869DF2CCD2F5E9C53CD87 /* PointView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F310014D193076EFBD5A6A /* PointView.swift */; };
 		601B277E34011B1088A1AB6C /* FriendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB9FC7F45BA3000882228C14 /* FriendView.swift */; };
-		61358F8F74FE2A345B857E7E /* MODNetMatte.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 10C1879FA151D0E488F2022B /* MODNetMatte.mlpackage */; };
 		639DFF59DD8A7A1F03283B7A /* PongEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A553BF5971B0C8BC9CF2B6F /* PongEngine.swift */; };
 		666E9502EE72B75EA07A2E7F /* RoundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C65DB292009F6948321F06E5 /* RoundView.swift */; };
 		6C215DAE6540348C4534955E /* FacePongApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96BF3331FCEF09FFC7DAE532 /* FacePongApp.swift */; };
@@ -47,7 +46,6 @@
 
 /* Begin PBXFileReference section */
 		0D517C603A78862951CACE6F /* ColyseusClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColyseusClient.swift; sourceTree = "<group>"; };
-		10C1879FA151D0E488F2022B /* MODNetMatte.mlpackage */ = {isa = PBXFileReference; path = MODNetMatte.mlpackage; sourceTree = "<group>"; };
 		24792B89F2BA87D3C43F8D7D /* GameConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameConstants.swift; sourceTree = "<group>"; };
 		292BE04A1B711DE56A47447A /* SchemaDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaDecoder.swift; sourceTree = "<group>"; };
 		2BF378D99BADAC88D24A4066 /* ShareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareView.swift; sourceTree = "<group>"; };
@@ -226,7 +224,6 @@
 			isa = PBXGroup;
 			children = (
 				E108C143878B8967D45C635F /* Assets.xcassets */,
-				10C1879FA151D0E488F2022B /* MODNetMatte.mlpackage */,
 				C7B3B98A5C78148607AEBB30 /* Fonts */,
 				43A29314D9D89E15CCD7437C /* sfx */,
 			);
@@ -323,7 +320,6 @@
 				89F8FB0A2ADFAB5C26A93C66 /* GameConstants.swift in Sources */,
 				75723009E5F9EB9B03F15FEF /* GameModel.swift in Sources */,
 				CFA17C69BEF5F3F42ACC788F /* GameScene.swift in Sources */,
-				61358F8F74FE2A345B857E7E /* MODNetMatte.mlpackage in Sources */,
 				FB8DA54CCD6CE8279005FB02 /* MatchView.swift in Sources */,
 				FE01D22AB37B769B00022D44 /* NeonUI.swift in Sources */,
 				23D9AD240E57EDDE83C393C5 /* NetConfig.swift in Sources */,
@@ -380,7 +376,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20;
+				CURRENT_PROJECT_VERSION = 21;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = PKB6KZ8392;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -441,7 +437,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20;
+				CURRENT_PROJECT_VERSION = 21;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = PKB6KZ8392;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
