@@ -15,7 +15,7 @@ final class FacePaddleNode: SKNode {
     private let size: CGFloat = GC.paddle
     private var half: CGFloat { size / 2 }
     private var maxR: CGFloat { half * CGFloat(2).squareRoot() }
-    private var amp: CGFloat { size * 0.18 }
+    private var amp: CGFloat { size * 0.10 }   // subtle jiggle ripple (keep the face readable)
 
     // mesh grid (8x8 cells → 9x9 = 81 vertices), matching the original FacePaddle.
     private static let grid = 8
@@ -98,16 +98,24 @@ final class FacePaddleNode: SKNode {
         applyWarp(pop: 0)
     }
 
-    func pop() { popT = 0 }
+    private var wobbleDir: CGFloat = 1
+    func pop() { popT = 0; wobbleDir = -wobbleDir }   // alternate the rock direction each hit
 
     func advance(dt: Double) {
         popT += dt
         let p = GameScene.springPop(popT)
+        // Funny impact reaction: a springy squash-&-stretch + a knockback recoil +
+        // a tilt rock, all applied to the face as ONE unit so it stays a face.
+        let node: SKNode = isSilhouette ? silhouette : coin
+        let dir: CGFloat = slot == .p1 ? -1 : 1            // jolt outward (away from the ball)
+        let shimmy = sin(popT * 40) * p * size * 0.05      // fast little side-to-side shake
+        node.position = CGPoint(x: shimmy, y: dir * p * size * 0.14)
+        node.zRotation = p * 0.27 * wobbleDir              // bigger ~15° rock that springs back
         if isSilhouette {
             applyWarp(pop: p)
         } else {
-            coin.xScale = 1 + p * 0.4
-            coin.yScale = 1 - p * 0.3
+            coin.xScale = 1 + p * 0.34
+            coin.yScale = 1 - p * 0.24
         }
     }
 
@@ -115,8 +123,8 @@ final class FacePaddleNode: SKNode {
     // `pop` (springs through zero) — a cartoon impact, not a nudge. Identical math
     // to the original FacePaddle silhouette deform.
     private func applyWarp(pop p: CGFloat) {
-        let sx = 1 + p * 0.45
-        let sy = 1 - p * 0.34
+        let sx = 1 + p * 0.36   // gentle, readable squash (the face stays a face)
+        let sy = 1 - p * 0.26
         var dst = sourcePositions
         for i in 0..<dst.count {
             let u = CGFloat(dst[i].x), v = CGFloat(dst[i].y)

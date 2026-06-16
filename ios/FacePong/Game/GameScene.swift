@@ -30,21 +30,27 @@ final class GameScene: SKScene {
     private var running = false
     private(set) var rally = 0
 
-    // ---- trail ring buffer (court space) ----
-    private let trailLen = 32
+    // Promo capture mode (FP_PROMO=1): cranks every effect to the marketing-art
+    // "storm" — long bright comet, ambient sparkle field, denser confetti, and a
+    // never-miss hot rally — so a screen-recording matches appstore/enhance.py.
+    // Off → the tasteful shipping look (the gameplay improvements still apply).
+    let promo = ProcessInfo.processInfo.environment["FP_PROMO"] == "1"
+
+    // ---- trail ring buffer (court space) ---- longer + brighter = a real comet
+    private let trailLen = 48
     private var trail: [CGPoint] = []
-    private static let TRAIL_DOTS = 64
+    private static let TRAIL_DOTS = 96
     private static let trailR: [CGFloat] = (0..<TRAIL_DOTS).map { i in
         let f = CGFloat(i) / CGFloat(TRAIL_DOTS - 1)
-        return 12.5 * pow(1 - f, 1.15) + 0.9
+        return 11.5 * pow(1 - f, 1.12) + 0.9   // a touch narrower
     }
     private static let trailO: [CGFloat] = (0..<TRAIL_DOTS).map { i in
         let f = CGFloat(i) / CGFloat(TRAIL_DOTS - 1)
-        return 0.58 * pow(1 - f, 1.2) + 0.04
+        return 0.6 * pow(1 - f, 1.12) + 0.04    // a touch dimmer
     }
     private static let trailWhite: [CGFloat] = (0..<TRAIL_DOTS).map { i in
         let f = CGFloat(i) / CGFloat(TRAIL_DOTS - 1)
-        return pow(max(0, 1 - f * 3.5), 1.8)
+        return pow(max(0, 1 - f * 3.0), 1.7)
     }
 
     // ---- nodes ----
@@ -63,9 +69,21 @@ final class GameScene: SKScene {
     private let confettiLayer = SKNode()
     private var confetti1: [SKSpriteNode] = []
     private var confetti2: [SKSpriteNode] = []
+    private var confCount: Int { promo ? 40 : 14 }   // confetti specks per smash
     private static let splashColors = [Palette.cyan, Palette.magenta, Palette.lime,
                                        Palette.amber, SKColor.white, Palette.lime,
                                        Palette.magenta, Palette.cyan]
+
+    // ---- impact flash (additive burst at the struck paddle) ----
+    private var flash1 = SKSpriteNode()
+    private var flash2 = SKSpriteNode()
+
+    // ---- ambient sparkle field (the marketing "storm"; promo only) ----
+    private struct Spark { var x, y, vx, vy, size, phase, tw, rot: CGFloat; var rect: Bool }
+    private let sparkLayer = SKNode()
+    private var sparks: [Spark] = []
+    private var sparkNodes: [SKSpriteNode] = []
+    private var ambientT: Double = 0
 
     // ---- juice state (elapsed-time driven) ----
     private var pulseT: Double = 99      // ball squash-pulse
@@ -158,15 +176,43 @@ final class GameScene: SKScene {
         ring2.strokeColor = Palette.magenta; ring2.fillColor = .clear; ring2.zPosition = 3; ring2.isHidden = true
         addChild(ring1); addChild(ring2)
 
+        // ambient sparkle field (promo storm) — drifts up + twinkles behind the ball
+        sparkLayer.zPosition = 2
+        addChild(sparkLayer)
+        let sparkN = promo ? 120 : 0
+        for i in 0..<sparkN {
+            let rect = Bool.random()
+            sparks.append(Spark(x: CGFloat.random(in: 14...(Court.W - 14)),
+                                y: CGFloat.random(in: 150...830),
+                                vx: CGFloat.random(in: -6...6),
+                                vy: CGFloat.random(in: -11 ... -2),
+                                size: CGFloat.random(in: 6...17),
+                                phase: CGFloat.random(in: 0...6.28),
+                                tw: CGFloat.random(in: 1.4...3.6),
+                                rot: CGFloat.random(in: 0...3.14), rect: rect))
+            let node = SKSpriteNode(texture: rect ? TextureFactory.crispDot : TextureFactory.softDot)
+            node.blendMode = .add; node.colorBlendFactor = 1
+            node.color = GameScene.splashColors[i % GameScene.splashColors.count]
+            node.isHidden = true
+            sparkLayer.addChild(node); sparkNodes.append(node)
+        }
+
+        // impact flash bursts (one per paddle)
+        for f in [flash1, flash2] {
+            f.texture = TextureFactory.softDot; f.blendMode = .add; f.colorBlendFactor = 1
+            f.isHidden = true; f.zPosition = 5; addChild(f)
+        }
+
         // confetti
         confettiLayer.zPosition = 6
         addChild(confettiLayer)
-        for i in 0..<8 {
+        let pal = GameScene.splashColors.count
+        for i in 0..<confCount {
             let a = SKSpriteNode(texture: TextureFactory.crispDot)
-            a.colorBlendFactor = 1; a.color = GameScene.splashColors[i]; a.isHidden = true
+            a.colorBlendFactor = 1; a.color = GameScene.splashColors[i % pal]; a.isHidden = true
             confettiLayer.addChild(a); confetti1.append(a)
             let b = SKSpriteNode(texture: TextureFactory.crispDot)
-            b.colorBlendFactor = 1; b.color = GameScene.splashColors[i]; b.isHidden = true
+            b.colorBlendFactor = 1; b.color = GameScene.splashColors[i % pal]; b.isHidden = true
             confettiLayer.addChild(b); confetti2.append(b)
         }
     }
@@ -294,16 +340,24 @@ final class GameScene: SKScene {
                     var np1 = engine.s.p1x + (inputX - engine.s.p1x) * GC.inputFollow
                     np1 = min(max(np1, lo), hi)
                     engine.s.p1x = np1
+                } else if promo { // promo: weave-track -> angled hits -> curved comet, never miss
+                    let off = sin(ambientT * 1.7) * 30      // < paddleR(44) so it always connects
+                    engine.s.p1x = min(max(engine.s.ballX + off, lo), hi)
                 } else { // attract: bottom paddle is also AI
                     let k1: CGFloat = engine.s.vy > 0 ? GC.easeToward : GC.easeAway
                     var np1 = engine.s.p1x + (engine.s.ballX - engine.s.p1x) * k1
                     np1 = min(max(np1, lo), hi)
                     engine.s.p1x = np1
                 }
-                let k2: CGFloat = engine.s.vy < 0 ? GC.easeToward * 0.9 : GC.easeAway
-                var np2 = engine.s.p2x + (engine.s.ballX - engine.s.p2x) * k2
-                np2 = min(max(np2, lo), hi)
-                engine.s.p2x = np2
+                if promo {
+                    let off = sin(ambientT * 1.9 + 2.1) * 30
+                    engine.s.p2x = min(max(engine.s.ballX + off, lo), hi)
+                } else {
+                    let k2: CGFloat = engine.s.vy < 0 ? GC.easeToward * 0.9 : GC.easeAway
+                    var np2 = engine.s.p2x + (engine.s.ballX - engine.s.p2x) * k2
+                    np2 = min(max(np2, lo), hi)
+                    engine.s.p2x = np2
+                }
 
                 let r = engine.step()
                 if let hit = r.paddleHit { onPaddleHit(hit, rally: engine.s.rally) }
@@ -320,6 +374,7 @@ final class GameScene: SKScene {
         }
 
         advanceJuice(dt: dt / 1000)
+        updateSparks(dt: dt / 1000)
         paddle1.advance(dt: dt / 1000)
         paddle2.advance(dt: dt / 1000)
         render()
@@ -362,15 +417,17 @@ final class GameScene: SKScene {
     private func advanceJuice(dt: Double) {
         pulseT += dt; flareT += dt; shakeT += dt
         ring1T += dt; ring2T += dt; conf1T += dt; conf2T += dt
+        ambientT += dt
     }
 
     // damped spring closed-form for the face pop (after a 40ms punch).
     // zeta≈0.25, wn≈20rad/s from damping6/stiff240/mass0.6 → one big overshoot.
     static func springPop(_ t: Double) -> CGFloat {
-        if t < 0.04 { return CGFloat(t / 0.04) }          // punch up to 1
-        let tt = t - 0.04
-        if tt > 0.9 { return 0 }
-        return CGFloat(exp(-5.0 * tt) * cos(19.36 * tt))
+        if t < 0.05 { return CGFloat(t / 0.05) }          // quick punch
+        let tt = t - 0.05
+        if tt > 1.0 { return 0 }
+        // Springy "boing" — no flat hold; bounces through a few decaying wobbles.
+        return CGFloat(exp(-3.4 * tt) * cos(13.0 * tt))
     }
 
     // MARK: render
@@ -378,9 +435,8 @@ final class GameScene: SKScene {
     private func render() {
         let bx = engine.s.ballX, by = engine.s.ballY
         let heat = heatColor(rally: rally)
-        let flare = flareT < 0.32 ? CGFloat(pow(1 - flareT / 0.32, 1)) * easeOutCubic01(flareT / 0.32) : 0
-        let flareV: CGFloat = flareT < 0.32 ? (1 - CGFloat(easeOutCubic01(flareT / 0.32))) : 0
-        _ = flare
+        let flareDur = 0.42
+        let flareV: CGFloat = flareT < flareDur ? (1 - CGFloat(easeOutCubic01(flareT / flareDur))) : 0
 
         // ---- trail ----
         for i in 0..<trailLen {
@@ -393,12 +449,12 @@ final class GameScene: SKScene {
                 let cx = A.x + (B.x - A.x) * f
                 let cy = A.y + (B.y - A.y) * f
                 let baseR = GameScene.trailR[idx]
-                let cr = baseR * (1 + flareV * 0.75)
-                let co = min(0.98, GameScene.trailO[idx] * (1 + flareV * 2.6))
+                let cr = baseR * (1 + flareV * 0.9)
+                let co = min(0.9, GameScene.trailO[idx] * (1 + flareV * 2.6))
                 dot.isHidden = false
                 dot.position = courtPoint(x: cx, y: cy)
                 // soft texture: size ≈ 2*r*softScale so the bright core ≈ r
-                let s = cr * 2.0 * 1.25
+                let s = cr * 2.0 * 1.14
                 dot.size = CGSize(width: s, height: s)
                 dot.alpha = co
                 dot.color = lerpColor(heat, .white, GameScene.trailWhite[idx])
@@ -428,6 +484,10 @@ final class GameScene: SKScene {
         // ---- confetti ----
         updateConfetti(confetti1, t: conf1T, seed: conf1Seed, x: ring1X, y: GC.botY - GC.paddleR, dir: -1)
         updateConfetti(confetti2, t: conf2T, seed: conf2Seed, x: ring2X, y: GC.topY + GC.paddleR, dir: 1)
+
+        // ---- impact flash ----
+        updateFlash(flash1, t: ring1T, x: ring1X, y: GC.botY - GC.paddleR, color: Palette.cyan)
+        updateFlash(flash2, t: ring2T, x: ring2X, y: GC.topY + GC.paddleR, color: Palette.magenta)
 
         // ---- screen shake ----
         if shakeT < 0.28 {
@@ -462,20 +522,65 @@ final class GameScene: SKScene {
     }
 
     private func updateConfetti(_ dots: [SKSpriteNode], t: Double, seed: CGFloat, x: CGFloat, y: CGFloat, dir: CGFloat) {
-        if t >= 0.62 { dots.forEach { $0.isHidden = true }; return }
-        let tt = CGFloat(t / 0.62)
+        let life = 0.92
+        if t >= life { dots.forEach { $0.isHidden = true }; return }
+        let tt = CGFloat(t / life)
         let e = 1 - pow(1 - tt, 3)
         for i in 0..<dots.count {
             let dot = dots[i]
-            let a = dir * (.pi / 2) + (splashRnd(seed, i, 1) - 0.5) * 2.4
-            let dist = (34 + splashRnd(seed, i, 2) * 52) * e
+            let a = dir * (.pi / 2) + (splashRnd(seed, i, 1) - 0.5) * 3.0   // wider blast
+            let dist = (40 + splashRnd(seed, i, 2) * 110) * e               // farther
             let cx = x + cos(a) * dist
-            let cy = y + sin(a) * dist + 26 * tt * tt   // gravity (court y-down)
-            let r = (2.1 + splashRnd(seed, i, 3) * 1.9) * (1 - tt * 0.45)
+            let cy = y + sin(a) * dist + 38 * tt * tt   // gravity (court y-down)
+            let r = (2.6 + splashRnd(seed, i, 3) * 3.0) * (1 - tt * 0.4)
             dot.isHidden = false
             dot.position = courtPoint(x: cx, y: cy)
-            dot.size = CGSize(width: r * 2 * 1.3, height: r * 2 * 1.3)
-            dot.alpha = tt >= 1 ? 0 : 0.95 * (1 - tt)
+            if i % 2 == 0 {   // paper rect
+                dot.size = CGSize(width: r * 2 * 0.7, height: r * 2 * 1.9)
+                dot.zRotation = a + CGFloat(t) * 6
+            } else {          // round speck
+                dot.size = CGSize(width: r * 2 * 1.35, height: r * 2 * 1.35)
+                dot.zRotation = 0
+            }
+            dot.alpha = tt >= 1 ? 0 : 0.98 * (1 - tt * 0.85)
+        }
+    }
+
+    // Additive burst at the struck paddle (drives off the impact-ring timer).
+    private func updateFlash(_ s: SKSpriteNode, t: Double, x: CGFloat, y: CGFloat, color: SKColor) {
+        let dur = 0.22
+        if t >= dur { s.isHidden = true; return }
+        let p = CGFloat(1 - t / dur)                 // 1 at impact → 0
+        let r = CGFloat(150) * (0.55 + (1 - p) * 0.7)  // flares outward
+        s.isHidden = false
+        s.size = CGSize(width: r, height: r)
+        s.position = courtPoint(x: x, y: y)
+        s.color = lerpColor(color, .white, 0.6)
+        s.alpha = p * (promo ? 0.9 : 0.55)
+    }
+
+    // Ambient sparkle field: slow upward drift + twinkle (promo capture only).
+    private func updateSparks(dt: Double) {
+        guard !sparkNodes.isEmpty else { return }
+        let d = CGFloat(dt)
+        for i in 0..<sparks.count {
+            sparks[i].x += sparks[i].vx * d
+            sparks[i].y += sparks[i].vy * d
+            if sparks[i].x < 8 { sparks[i].x = Court.W - 8 } else if sparks[i].x > Court.W - 8 { sparks[i].x = 8 }
+            if sparks[i].y < 140 { sparks[i].y = 836 }       // drifts up, wraps to bottom
+            let s = sparks[i]
+            let tw = 0.32 + 0.68 * abs(sin(ambientT * Double(s.tw) + Double(s.phase)))
+            let node = sparkNodes[i]
+            node.isHidden = false
+            node.position = courtPoint(x: s.x, y: s.y)
+            if s.rect {
+                node.size = CGSize(width: s.size * 0.6, height: s.size * 1.85)
+                node.zRotation = s.rot + CGFloat(ambientT) * 0.6
+                node.alpha = CGFloat(tw) * 0.92
+            } else {
+                node.size = CGSize(width: s.size * 1.9, height: s.size * 1.9)
+                node.alpha = CGFloat(tw) * 0.62
+            }
         }
     }
 

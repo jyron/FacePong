@@ -71,7 +71,7 @@ final class GameModel: ObservableObject, GameSceneDelegate {
             case "share": route = .share
             case "friend": route = .friend
             case "round": route = .round
-            case "play": scene.demo = true; route = .play
+            case "play": scene.demo = true; route = .play; score1 = 0; score2 = 0; topRally = 0; liveRally = 0
             case "auto": score1 = 0; score2 = 0; topRally = 0; aces = 0
                 DispatchQueue.main.async { [weak self] in self?.startCPU() }
             default: break
