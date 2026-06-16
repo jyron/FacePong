@@ -94,6 +94,12 @@ final class GameModel: ObservableObject, GameSceneDelegate {
                 do {
                     let cut = try await FaceCutout.cutout(from: raw)
                     NSLog("FP_VISION_TEST: cutout OK size=\(cut.size)")
+                    if let png = cut.pngData() {
+                        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                            .appendingPathComponent("cutout.png")
+                        try? png.write(to: url)
+                        NSLog("FP_VISION_TEST: wrote \(url.path)")
+                    }
                     await MainActor.run { self?.setFace(.p1, cut); self?.setFace(.p2, cut) }
                 } catch {
                     NSLog("FP_VISION_TEST: FAILED \(error)")
