@@ -101,12 +101,20 @@ final class GameScene: SKScene {
     private(set) var score1 = 0
     private(set) var score2 = 0
 
+    // This scene is a SINGLE persistent instance (GameModel.scene) reused for the app's
+    // whole life. SwiftUI tears down and recreates the SpriteView as the user moves
+    // between the menu and a court screen, and each presentation calls didMove(to:).
+    // buildCourt() must therefore run EXACTLY ONCE — re-adding nodes that already have a
+    // parent makes SKNode.addChild throw an NSException (SIGABRT). This guard was the
+    // crash behind the App Store rejection + TestFlight crashes.
+    private var courtBuilt = false
+
     override func didMove(to view: SKView) {
         backgroundColor = Palette.bg
         scaleMode = .aspectFit
         anchorPoint = .zero
         size = CGSize(width: Court.W, height: Court.H)
-        buildCourt()
+        if !courtBuilt { buildCourt(); courtBuilt = true }
         if demo { serveAttract() } else { prepareReady() }
     }
 
