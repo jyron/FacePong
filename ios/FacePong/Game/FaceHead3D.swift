@@ -27,11 +27,11 @@ enum FaceHead3D {
 
     // ---- tunables ----
     private static let gridN = 76          // mesh resolution per axis
-    private static let frontDepth: Float = 0.54   // forward bulge (head spans ~1 unit)
-    private static let backDepth: Float  = 0.34   // rear shell bulge
-    private static let featureDepth: Float = 0.0  // luminance micro-relief — OFF: it makes
-                                                   // noisy normals and blotchy shading. The
-                                                   // smooth dome is the whole look.
+    private static let frontDepth: Float = 0.30   // GENTLE forward round (head spans ~1 unit).
+                                                   // Higher swells the face — keep it subtle so
+                                                   // the photo stays undistorted, just rounded.
+    private static let backDepth: Float  = 0.22   // rear shell bulge
+    private static let featureDepth: Float = 0.0  // luminance micro-relief — OFF (noisy normals)
 
     static func make(image: UIImage, tint: UIColor) -> Built {
         let n = gridN

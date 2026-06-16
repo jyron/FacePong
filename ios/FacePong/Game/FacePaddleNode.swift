@@ -124,21 +124,16 @@ final class FacePaddleNode: SKNode {
         popT += dt
         let p = GameScene.springPop(popT)
 
-        // 3D head: idle float (gentle turn + bob) plus an impact LUNGE toward the
-        // camera with squash + rock — the head jumps off the screen on a slap.
+        // 3D head: faces FORWARD at all times (never turns) and just floats with a
+        // gentle bob. On a slap it lunges toward the camera and squashes — a reaction,
+        // not a rotation.
         if isHead, let headNode {
             idleT += dt
             let pf = Float(p)
-            let yaw = Float(sin(idleT * 0.8) * 0.34)     // ±~19° turn so the 3D roundness reads
-            let pitch = Float(sin(idleT * 0.55) * 0.09)
-            let bob = Float(sin(idleT * 0.9) * 0.02)
-            headNode.simdPosition = simd_float3(Float(sin(popT * 40)) * pf * 0.06,
-                                                bob - pf * 0.04,
-                                                pf * 0.55)
-            headNode.simdScale = simd_float3(1 + pf * 0.20, 1 - pf * 0.14, 1 + pf * 0.20)
-            headNode.simdEulerAngles = simd_float3(pitch,
-                                                   yaw + pf * 0.12 * Float(wobbleDir),
-                                                   pf * 0.10 * Float(wobbleDir))
+            let bob = Float(sin(idleT * 1.1) * 0.02)     // gentle float only — no turning
+            headNode.simdEulerAngles = simd_float3(0, 0, 0)
+            headNode.simdPosition = simd_float3(0, bob, pf * 0.6)   // pop toward the viewer on impact
+            headNode.simdScale = simd_float3(1 + pf * 0.22, 1 - pf * 0.13, 1 + pf * 0.22)
             headGlow.alpha = 0.4 + CGFloat(pf) * 0.35
             let g = size * (2.1 + CGFloat(pf) * 0.5)
             headGlow.size = CGSize(width: g, height: g)
