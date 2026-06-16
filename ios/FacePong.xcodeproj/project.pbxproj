@@ -28,7 +28,6 @@
 		89F8FB0A2ADFAB5C26A93C66 /* GameConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24792B89F2BA87D3C43F8D7D /* GameConstants.swift */; };
 		8CD936545548F276BAB11C6C /* paddle.wav in Resources */ = {isa = PBXBuildFile; fileRef = 6E4949CD21A2E11951A1D9A4 /* paddle.wav */; };
 		93A87118088E403974F14969 /* SpaceGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4CC0A0F10B38C459FCD2719D /* SpaceGrotesk-Medium.ttf */; };
-		A4B0BF268C375E2E8DDDFE3B /* FaceHead3D.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DBD03A3FDEEABDC046AC563 /* FaceHead3D.swift */; };
 		A883374B996D1F2E723E4A27 /* FacePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FBA325EA35CA68CBCE738CB /* FacePicker.swift */; };
 		ADE3411DDA9FF2CD59EB36B0 /* fanfare.wav in Resources */ = {isa = PBXBuildFile; fileRef = 725381422B2540B0D775874D /* fanfare.wav */; };
 		B3BBA739DC2A103C56D4F25E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 714AEC92791B32A822913818 /* Theme.swift */; };
@@ -51,7 +50,6 @@
 		292BE04A1B711DE56A47447A /* SchemaDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaDecoder.swift; sourceTree = "<group>"; };
 		2BF378D99BADAC88D24A4066 /* ShareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareView.swift; sourceTree = "<group>"; };
 		2CE54F1B73B0703C553AE87B /* TextureFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextureFactory.swift; sourceTree = "<group>"; };
-		2DBD03A3FDEEABDC046AC563 /* FaceHead3D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceHead3D.swift; sourceTree = "<group>"; };
 		3DCFD4ACF7E159A63F43CA4F /* GameScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameScene.swift; sourceTree = "<group>"; };
 		4846979E44211D65E080FD6C /* wall.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = wall.wav; sourceTree = "<group>"; };
 		4A553BF5971B0C8BC9CF2B6F /* PongEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PongEngine.swift; sourceTree = "<group>"; };
@@ -145,7 +143,6 @@
 		872329A8D197F39932D2D220 /* Game */ = {
 			isa = PBXGroup;
 			children = (
-				2DBD03A3FDEEABDC046AC563 /* FaceHead3D.swift */,
 				BBB16B3CAFD91992FD7CBD15 /* FacePaddleNode.swift */,
 				24792B89F2BA87D3C43F8D7D /* GameConstants.swift */,
 				3DCFD4ACF7E159A63F43CA4F /* GameScene.swift */,
@@ -316,7 +313,6 @@
 			files = (
 				0A9EA1CCF4B471D5973D531E /* ColyseusClient.swift in Sources */,
 				7DF29648C3B25AD5DF8F92A4 /* FaceCutout.swift in Sources */,
-				A4B0BF268C375E2E8DDDFE3B /* FaceHead3D.swift in Sources */,
 				D323C12D0FB77F4434D4FB01 /* FacePaddleNode.swift in Sources */,
 				A883374B996D1F2E723E4A27 /* FacePicker.swift in Sources */,
 				6C215DAE6540348C4534955E /* FacePongApp.swift in Sources */,
@@ -380,7 +376,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 18;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = PKB6KZ8392;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -441,7 +437,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 18;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = PKB6KZ8392;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

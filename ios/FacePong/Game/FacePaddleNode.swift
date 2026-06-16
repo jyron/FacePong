@@ -8,7 +8,6 @@
 // reads as a glowing game piece on the dark court. No cutout (CPU/opponent) →
 // the stylized coin avatar, which squashes uniformly.
 import SpriteKit
-import SceneKit
 import simd
 
 final class FacePaddleNode: SKNode {
@@ -34,16 +33,7 @@ final class FacePaddleNode: SKNode {
     private let coinFace = SKSpriteNode()
     private let coinRing = SKShapeNode(circleOfRadius: GC.paddleR)
 
-    // 3D head sub-tree (the disembodied floating-head look) — a SceneKit scene
-    // rendered inside SpriteKit via SK3DNode, with a soft neon halo behind it.
-    private let headHolder = SKNode()
-    private let headGlow = SKSpriteNode(texture: TextureFactory.softDot)
-    private var head3D: SK3DNode?
-    private var headNode: SCNNode?
-
     private var isSilhouette = false
-    private var isHead = false
-    private var idleT: Double = 0
     private var popT: Double = 9   // settled
 
     init(slot: Slot) {
@@ -82,39 +72,30 @@ final class FacePaddleNode: SKNode {
         auraSprite.blendMode = .add; auraSprite.zPosition = 1
         rimSprite.blendMode = .add; rimSprite.zPosition = 2
         faceSprite.zPosition = 3
-
-        // --- 3D head holder + neon halo (the SK3DNode itself is built on setFace) ---
-        addChild(headHolder)
-        headHolder.isHidden = true
-        headGlow.colorBlendFactor = 1; headGlow.color = ringColor; headGlow.blendMode = .add
-        headGlow.alpha = 0.42; headGlow.size = CGSize(width: size * 2.1, height: size * 2.1)
-        headGlow.zPosition = 0; headHolder.addChild(headGlow)
     }
 
     required init?(coder: NSCoder) { fatalError() }
 
-    // image == nil → coin avatar. A transparent Vision cutout → a disembodied 3D head.
+    // image == nil → coin avatar. A transparent Vision cutout → silhouette mesh.
     func setFace(_ image: UIImage?) {
         guard let image else {
-            isHead = false; isSilhouette = false
-            coin.isHidden = false; silhouette.isHidden = true; headHolder.isHidden = true
+            isSilhouette = false
+            coin.isHidden = false; silhouette.isHidden = true
             coinFace.texture = defaultCoinTexture(slot: slot)
             return
         }
-        // Inflate the cutout into a floating 3D head and render it via SK3DNode.
-        let built = FaceHead3D.make(image: image, tint: Palette.ring(slot))
-        headNode = built.head
-        let vp = size * 2.0   // viewport bigger than the paddle so the head + its lunge fit
-        let node = head3D ?? SK3DNode(viewportSize: CGSize(width: vp, height: vp))
-        node.viewportSize = CGSize(width: vp, height: vp)
-        node.scnScene = built.scene
-        node.pointOfView = built.camera
-        node.autoenablesDefaultLighting = false
-        node.isPlaying = true
-        node.zPosition = 1
-        if head3D == nil { headHolder.addChild(node); head3D = node }
-        isHead = true; isSilhouette = false
-        coin.isHidden = true; silhouette.isHidden = true; headHolder.isHidden = false
+        isSilhouette = true
+        coin.isHidden = true; silhouette.isHidden = false
+        let ringColor = Palette.ring(slot)
+        faceSprite.texture = SKTexture(image: image)
+        // baked neon aura + rim, shaped by the cutout's alpha. Strength is set via
+        // the sprite alpha (below) so the face reads in natural color with just a
+        // colored edge glow, not a tint washed over the whole face.
+        auraSprite.texture = SKTexture(image: tintedBlurred(image, color: ringColor, blur: size * 0.12))
+        rimSprite.texture = SKTexture(image: tintedBlurred(image, color: ringColor, blur: size * 0.03))
+        auraSprite.alpha = 0.5
+        rimSprite.alpha = 0.55
+        applyWarp(pop: 0)
     }
 
     private var wobbleDir: CGFloat = 1
@@ -123,22 +104,6 @@ final class FacePaddleNode: SKNode {
     func advance(dt: Double) {
         popT += dt
         let p = GameScene.springPop(popT)
-
-        // 3D head: faces FORWARD at all times (never turns) and just floats with a
-        // gentle bob. On a slap it lunges toward the camera and squashes — a reaction,
-        // not a rotation.
-        if isHead, let headNode {
-            idleT += dt
-            let pf = Float(p)
-            let bob = Float(sin(idleT * 1.1) * 0.02)     // gentle float only — no turning
-            headNode.simdEulerAngles = simd_float3(0, 0, 0)
-            headNode.simdPosition = simd_float3(0, bob, pf * 0.6)   // pop toward the viewer on impact
-            headNode.simdScale = simd_float3(1 + pf * 0.22, 1 - pf * 0.13, 1 + pf * 0.22)
-            headGlow.alpha = 0.4 + CGFloat(pf) * 0.35
-            let g = size * (2.1 + CGFloat(pf) * 0.5)
-            headGlow.size = CGSize(width: g, height: g)
-            return
-        }
 
         // Funny impact reaction: a springy squash-&-stretch + a knockback recoil +
         // a tilt rock, all applied to the face as ONE unit so it stays a face.
