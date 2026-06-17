@@ -81,17 +81,22 @@ struct Difficulty {
     // The chess.com-style ladder: rung 1 is built to LOSE; rung 9 is near-unbeatable.
     // Each axis moves monotonically toward harder. Tier 4 (Sharp) ≈ today's tracking
     // gain (0.082) but with human lag/error + prediction, so it actually fights back.
+    // Every tier now clears a COMPETENCE FLOOR: even WARM-UP reacts within ~150ms,
+    // tracks fast enough to reach a served ball in time, has near-full paddle reach,
+    // and only mis-aims by ≤ half a paddle — so the easy rivals reliably return serves
+    // and trade rallies. They stay beatable via low prediction, slower ball speed,
+    // gentler tracking and a real (but not huge) aim error — not via being helpless.
     static let tiers: [Difficulty] = [
         //         name           reactTk  track  trackAway  predict  aimErr  cover  spdMul  rampMul  svYMul  svXMul
-        .init(name: "WARM-UP",      reactionTicks: 19, trackGain: 0.040, trackGainAway: 0.015, predict: 0.00, aimErrorUnits: 34, coverage: 0.62, maxSpeedMul: 0.62, rampMul: 0.85, serveVYMul: 0.81, serveVXSpreadMul: 0.70),
-        .init(name: "ROOKIE",       reactionTicks: 16, trackGain: 0.052, trackGainAway: 0.019, predict: 0.00, aimErrorUnits: 26, coverage: 0.72, maxSpeedMul: 0.70, rampMul: 0.90, serveVYMul: 0.84, serveVXSpreadMul: 0.80),
-        .init(name: "REGULAR",      reactionTicks: 12, trackGain: 0.066, trackGainAway: 0.024, predict: 0.15, aimErrorUnits: 18, coverage: 0.82, maxSpeedMul: 0.80, rampMul: 0.95, serveVYMul: 0.87, serveVXSpreadMul: 0.90),
-        .init(name: "SHARP",        reactionTicks: 9,  trackGain: 0.082, trackGainAway: 0.030, predict: 0.35, aimErrorUnits: 12, coverage: 0.90, maxSpeedMul: 0.90, rampMul: 1.00, serveVYMul: 0.90, serveVXSpreadMul: 1.00),
-        .init(name: "PRO",          reactionTicks: 7,  trackGain: 0.100, trackGainAway: 0.037, predict: 0.55, aimErrorUnits: 8,  coverage: 0.96, maxSpeedMul: 1.00, rampMul: 1.06, serveVYMul: 0.94, serveVXSpreadMul: 1.10),
-        .init(name: "ACE",          reactionTicks: 5,  trackGain: 0.125, trackGainAway: 0.046, predict: 0.72, aimErrorUnits: 5,  coverage: 1.00, maxSpeedMul: 1.12, rampMul: 1.10, serveVYMul: 0.97, serveVXSpreadMul: 1.20),
-        .init(name: "CHAMPION",     reactionTicks: 3,  trackGain: 0.150, trackGainAway: 0.055, predict: 0.85, aimErrorUnits: 3,  coverage: 1.05, maxSpeedMul: 1.22, rampMul: 1.14, serveVYMul: 1.00, serveVXSpreadMul: 1.30),
-        .init(name: "LEGEND",       reactionTicks: 2,  trackGain: 0.180, trackGainAway: 0.067, predict: 0.93, aimErrorUnits: 1.5,coverage: 1.10, maxSpeedMul: 1.32, rampMul: 1.18, serveVYMul: 1.05, serveVXSpreadMul: 1.40),
-        .init(name: "GRANDMASTER",  reactionTicks: 1,  trackGain: 0.220, trackGainAway: 0.081, predict: 0.98, aimErrorUnits: 0.6,coverage: 1.15, maxSpeedMul: 1.45, rampMul: 1.22, serveVYMul: 1.19, serveVXSpreadMul: 1.50),
+        .init(name: "WARM-UP",      reactionTicks: 9,  trackGain: 0.075, trackGainAway: 0.030, predict: 0.10, aimErrorUnits: 16, coverage: 0.90, maxSpeedMul: 0.78, rampMul: 0.90, serveVYMul: 0.85, serveVXSpreadMul: 0.80),
+        .init(name: "ROOKIE",       reactionTicks: 8,  trackGain: 0.090, trackGainAway: 0.034, predict: 0.18, aimErrorUnits: 13, coverage: 0.93, maxSpeedMul: 0.84, rampMul: 0.94, serveVYMul: 0.88, serveVXSpreadMul: 0.88),
+        .init(name: "REGULAR",      reactionTicks: 7,  trackGain: 0.105, trackGainAway: 0.040, predict: 0.28, aimErrorUnits: 10, coverage: 0.96, maxSpeedMul: 0.90, rampMul: 0.98, serveVYMul: 0.90, serveVXSpreadMul: 0.95),
+        .init(name: "SHARP",        reactionTicks: 6,  trackGain: 0.120, trackGainAway: 0.045, predict: 0.40, aimErrorUnits: 8,  coverage: 0.99, maxSpeedMul: 0.96, rampMul: 1.02, serveVYMul: 0.93, serveVXSpreadMul: 1.02),
+        .init(name: "PRO",          reactionTicks: 5,  trackGain: 0.140, trackGainAway: 0.052, predict: 0.55, aimErrorUnits: 6,  coverage: 1.02, maxSpeedMul: 1.04, rampMul: 1.07, serveVYMul: 0.96, serveVXSpreadMul: 1.10),
+        .init(name: "ACE",          reactionTicks: 4,  trackGain: 0.160, trackGainAway: 0.060, predict: 0.70, aimErrorUnits: 4.5,coverage: 1.06, maxSpeedMul: 1.12, rampMul: 1.11, serveVYMul: 1.00, serveVXSpreadMul: 1.18),
+        .init(name: "CHAMPION",     reactionTicks: 3,  trackGain: 0.185, trackGainAway: 0.068, predict: 0.82, aimErrorUnits: 3,  coverage: 1.10, maxSpeedMul: 1.22, rampMul: 1.15, serveVYMul: 1.04, serveVXSpreadMul: 1.28),
+        .init(name: "LEGEND",       reactionTicks: 2,  trackGain: 0.210, trackGainAway: 0.078, predict: 0.90, aimErrorUnits: 2,  coverage: 1.14, maxSpeedMul: 1.32, rampMul: 1.18, serveVYMul: 1.08, serveVXSpreadMul: 1.38),
+        .init(name: "GRANDMASTER",  reactionTicks: 1,  trackGain: 0.240, trackGainAway: 0.090, predict: 0.96, aimErrorUnits: 1,  coverage: 1.18, maxSpeedMul: 1.45, rampMul: 1.22, serveVYMul: 1.14, serveVXSpreadMul: 1.48),
         .init(name: "SUPREME",      reactionTicks: 0,  trackGain: 0.300, trackGainAway: 0.110, predict: 1.00, aimErrorUnits: 0.0,coverage: 1.22, maxSpeedMul: 1.58, rampMul: 1.28, serveVYMul: 1.30, serveVXSpreadMul: 1.65),
     ]
 
