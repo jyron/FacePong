@@ -23,10 +23,12 @@ struct StartView: View {
                 Text("PONG").font(.display(56)).foregroundStyle(Color(hex: "#ff2e88")).neonGlow(Color(hex: "#ff2e88"), radius: 22, strong: true)
             }
 
-            NeonPill(text: "🏓  5 HEARTS · YOUR FACE IS THE PADDLE")
+            NeonPill(text: "🏓  YOUR FACE IS THE PADDLE")
 
             faceColumn(.p1)
-                .padding(.vertical, 8)
+                .padding(.vertical, 6)
+
+            HeartChip(hearts: model.hearts)
 
             VStack(spacing: 14) {
                 NeonButton(title: "VS COMPUTER", kind: .lime) { model.route = .characters }
@@ -35,9 +37,9 @@ struct StartView: View {
             }
             .padding(.horizontal, 28)
 
-            HStack(spacing: 6) {
-                Text("Longest rally").font(.body(13)).foregroundStyle(Color(hex: "#6a6496"))
-                Text("\(model.longestRally)").font(.bodyBold(14)).foregroundStyle(Color(hex: "#ffb02e"))
+            HStack(spacing: 18) {
+                stat("RIVALS BEATEN", "\(model.rivalsBeatenCount)/\(Rival.roster.count)", Color(hex: "#d4ff3d"))
+                stat("LONGEST RALLY", "\(model.longestRally)", Color(hex: "#ffb02e"))
             }
             Spacer(minLength: 8)
         }
@@ -63,6 +65,13 @@ struct StartView: View {
         .alert("No face found", isPresented: Binding(get: { model.pickError != nil }, set: { _ in model.pickError = nil })) {
             Button("OK", role: .cancel) {}
         } message: { Text(model.pickError ?? "") }
+    }
+
+    @ViewBuilder private func stat(_ label: String, _ value: String, _ color: Color) -> some View {
+        VStack(spacing: 2) {
+            Text(value).font(.bodyBold(16)).foregroundStyle(color)
+            Text(label).font(.body(10)).tracking(1).foregroundStyle(Color(hex: "#6a6496"))
+        }
     }
 
     @ViewBuilder private func faceColumn(_ slot: Slot) -> some View {

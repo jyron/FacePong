@@ -133,6 +133,31 @@ struct HeartsRow: View {
     }
 }
 
+// MARK: score pips
+
+/// A row of pips that FILL toward the win target — the in-match score, read as
+/// progress to victory (first to `target` points wins). Distinct from HeartsRow,
+/// which is the global lives currency. (This replaces the old draining-hearts
+/// match score, which was confusing — "you pop a heart" read as a bad thing.)
+struct ScorePips: View {
+    var score: Int
+    var target: Int = GC.targetScore
+    var color: Color
+    var size: CGFloat = 14
+
+    var body: some View {
+        HStack(spacing: size * 0.32) {
+            ForEach(0..<target, id: \.self) { i in
+                Circle()
+                    .fill(i < score ? color : Color(hex: "#2a2748"))
+                    .frame(width: size, height: size)
+                    .overlay(Circle().stroke(color.opacity(i < score ? 0 : 0.4), lineWidth: 1))
+                    .neonGlow(i < score ? color : .clear, radius: size * 0.4)
+            }
+        }
+    }
+}
+
 // MARK: face coin / card
 
 /// Circular neon coin (HUD, point/match screens). Shows a cutout, or a default disc.

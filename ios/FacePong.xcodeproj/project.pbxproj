@@ -9,9 +9,11 @@
 /* Begin PBXBuildFile section */
 		0A9EA1CCF4B471D5973D531E /* ColyseusClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D517C603A78862951CACE6F /* ColyseusClient.swift */; };
 		0AEC439B8660B6B1C1F60E37 /* char_founder.png in Resources */ = {isa = PBXBuildFile; fileRef = 48077242F43F298E43A0A645 /* char_founder.png */; };
+		0B67969974DF1B1B7F771A85 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2186D6D7A076B55024957454 /* Store.swift */; };
 		1070E3AD72F903478C83D38A /* char_tycoon.png in Resources */ = {isa = PBXBuildFile; fileRef = 089C9999C7B95AA6CE56194A /* char_tycoon.png */; };
 		1D00421D701B583031A1C511 /* SchemaDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 292BE04A1B711DE56A47447A /* SchemaDecoder.swift */; };
 		1E04DF8AD851193023414660 /* char_interesting.png in Resources */ = {isa = PBXBuildFile; fileRef = 3D2C9D872B521C6427F88089 /* char_interesting.png */; };
+		1F5C5946CFE0F479854D1632 /* char_chairman.png in Resources */ = {isa = PBXBuildFile; fileRef = F9B54FCB5619AC0B6B71A037 /* char_chairman.png */; };
 		22AC33851AA4353EEAD265ED /* Characters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34976AA0E97E27A6B33EDD80 /* Characters.swift */; };
 		23D9AD240E57EDDE83C393C5 /* NetConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93A110199244A4E02D253BFC /* NetConfig.swift */; };
 		29EF85CFA3AB4C780451D445 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4841FDE9B41EE74BEAF550D /* SoundManager.swift */; };
@@ -29,6 +31,7 @@
 		6C215DAE6540348C4534955E /* FacePongApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96BF3331FCEF09FFC7DAE532 /* FacePongApp.swift */; };
 		75723009E5F9EB9B03F15FEF /* GameModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3D48552C9EC22C6C4450403 /* GameModel.swift */; };
 		7DF29648C3B25AD5DF8F92A4 /* FaceCutout.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDAA76967011F812F538F72F /* FaceCutout.swift */; };
+		84B29AE12751B882106DBA67 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79EAC870E3BD0B1D7AFBA174 /* PaywallView.swift */; };
 		8728BDF37FE9C9BC1DCDFA3A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F081439E3FA8E64D4BCCE110 /* RootView.swift */; };
 		8789703DED67A54B70424848 /* Bungee-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F94AF65216E3B1D30C63527E /* Bungee-Regular.ttf */; };
 		89F8FB0A2ADFAB5C26A93C66 /* GameConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24792B89F2BA87D3C43F8D7D /* GameConstants.swift */; };
@@ -45,6 +48,7 @@
 		B9F1A86F15BA15CC7AE046B3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E108C143878B8967D45C635F /* Assets.xcassets */; };
 		C38F09DA32C256C70303BAF8 /* ShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BF378D99BADAC88D24A4066 /* ShareView.swift */; };
 		CFA17C69BEF5F3F42ACC788F /* GameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DCFD4ACF7E159A63F43CA4F /* GameScene.swift */; };
+		D160FF05B60B47E0ABA11B3B /* HeartBank.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CEC1537E1D7039F9A8F648D /* HeartBank.swift */; };
 		D223D3B4D3D29FCE9FCA101F /* char_king.png in Resources */ = {isa = PBXBuildFile; fileRef = 21AB2A165608952A2FF81860 /* char_king.png */; };
 		D323C12D0FB77F4434D4FB01 /* FacePaddleNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB16B3CAFD91992FD7CBD15 /* FacePaddleNode.swift */; };
 		D51B53602B1FCDC6AA02F337 /* TextureFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CE54F1B73B0703C553AE87B /* TextureFactory.swift */; };
@@ -60,6 +64,7 @@
 		089C9999C7B95AA6CE56194A /* char_tycoon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_tycoon.png; sourceTree = "<group>"; };
 		0A334B2B4D0B8EF8B74681FB /* char_player.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_player.png; sourceTree = "<group>"; };
 		0D517C603A78862951CACE6F /* ColyseusClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColyseusClient.swift; sourceTree = "<group>"; };
+		2186D6D7A076B55024957454 /* Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
 		21AB2A165608952A2FF81860 /* char_king.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_king.png; sourceTree = "<group>"; };
 		24792B89F2BA87D3C43F8D7D /* GameConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameConstants.swift; sourceTree = "<group>"; };
 		292BE04A1B711DE56A47447A /* SchemaDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaDecoder.swift; sourceTree = "<group>"; };
@@ -76,10 +81,12 @@
 		4CC0A0F10B38C459FCD2719D /* SpaceGrotesk-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Medium.ttf"; sourceTree = "<group>"; };
 		53B61DFEFA709530039417A0 /* MatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchView.swift; sourceTree = "<group>"; };
 		5852FD0423A09B05E2083282 /* NeonUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeonUI.swift; sourceTree = "<group>"; };
+		6CEC1537E1D7039F9A8F648D /* HeartBank.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartBank.swift; sourceTree = "<group>"; };
 		6E4949CD21A2E11951A1D9A4 /* paddle.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = paddle.wav; sourceTree = "<group>"; };
 		714AEC92791B32A822913818 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		725381422B2540B0D775874D /* fanfare.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = fanfare.wav; sourceTree = "<group>"; };
 		74F310014D193076EFBD5A6A /* PointView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointView.swift; sourceTree = "<group>"; };
+		79EAC870E3BD0B1D7AFBA174 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		7FBA325EA35CA68CBCE738CB /* FacePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FacePicker.swift; sourceTree = "<group>"; };
 		880097A7BF77426B1E95F8F6 /* StartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartView.swift; sourceTree = "<group>"; };
 		88FE16F6F6CA52FC5C3E2256 /* CharacterSelectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterSelectView.swift; sourceTree = "<group>"; };
@@ -104,6 +111,7 @@
 		F081439E3FA8E64D4BCCE110 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		F4841FDE9B41EE74BEAF550D /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
 		F94AF65216E3B1D30C63527E /* Bungee-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Bungee-Regular.ttf"; sourceTree = "<group>"; };
+		F9B54FCB5619AC0B6B71A037 /* char_chairman.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_chairman.png; sourceTree = "<group>"; };
 		FBABD8FA277E6B071E89B02D /* score.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = score.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -152,6 +160,7 @@
 		6B245100C994298A6F81CE7B /* Characters */ = {
 			isa = PBXGroup;
 			children = (
+				F9B54FCB5619AC0B6B71A037 /* char_chairman.png */,
 				8BA3A215058E3EF0B5019DAD /* char_champ.png */,
 				43A02BE9286D9F9F1C56AF00 /* char_dictator.png */,
 				48077242F43F298E43A0A645 /* char_founder.png */,
@@ -173,6 +182,7 @@
 				BB9FC7F45BA3000882228C14 /* FriendView.swift */,
 				53B61DFEFA709530039417A0 /* MatchView.swift */,
 				8C84F07C9949B260BA0DEFBA /* OnlineView.swift */,
+				79EAC870E3BD0B1D7AFBA174 /* PaywallView.swift */,
 				D630A777D4EED4EF21024B7E /* PlayHUD.swift */,
 				74F310014D193076EFBD5A6A /* PointView.swift */,
 				C65DB292009F6948321F06E5 /* RoundView.swift */,
@@ -189,7 +199,9 @@
 				BBB16B3CAFD91992FD7CBD15 /* FacePaddleNode.swift */,
 				24792B89F2BA87D3C43F8D7D /* GameConstants.swift */,
 				3DCFD4ACF7E159A63F43CA4F /* GameScene.swift */,
+				6CEC1537E1D7039F9A8F648D /* HeartBank.swift */,
 				4A553BF5971B0C8BC9CF2B6F /* PongEngine.swift */,
+				2186D6D7A076B55024957454 /* Store.swift */,
 				2CE54F1B73B0703C553AE87B /* TextureFactory.swift */,
 			);
 			path = Game;
@@ -338,6 +350,7 @@
 				8789703DED67A54B70424848 /* Bungee-Regular.ttf in Resources */,
 				58486648FF4695B7C87EC71A /* SpaceGrotesk-Bold.ttf in Resources */,
 				93A87118088E403974F14969 /* SpaceGrotesk-Medium.ttf in Resources */,
+				1F5C5946CFE0F479854D1632 /* char_chairman.png in Resources */,
 				FA2E1A09EF3752F07B832F9C /* char_champ.png in Resources */,
 				3429D1ABD44FBA50A0A913CC /* char_dictator.png in Resources */,
 				0AEC439B8660B6B1C1F60E37 /* char_founder.png in Resources */,
@@ -376,10 +389,12 @@
 				89F8FB0A2ADFAB5C26A93C66 /* GameConstants.swift in Sources */,
 				75723009E5F9EB9B03F15FEF /* GameModel.swift in Sources */,
 				CFA17C69BEF5F3F42ACC788F /* GameScene.swift in Sources */,
+				D160FF05B60B47E0ABA11B3B /* HeartBank.swift in Sources */,
 				FB8DA54CCD6CE8279005FB02 /* MatchView.swift in Sources */,
 				FE01D22AB37B769B00022D44 /* NeonUI.swift in Sources */,
 				23D9AD240E57EDDE83C393C5 /* NetConfig.swift in Sources */,
 				FFC448EF1D1BC274349BE2EA /* OnlineView.swift in Sources */,
+				84B29AE12751B882106DBA67 /* PaywallView.swift in Sources */,
 				3FA71849F97D487152F56515 /* PlayHUD.swift in Sources */,
 				5BD869DF2CCD2F5E9C53CD87 /* PointView.swift in Sources */,
 				639DFF59DD8A7A1F03283B7A /* PongEngine.swift in Sources */,
@@ -389,6 +404,7 @@
 				C38F09DA32C256C70303BAF8 /* ShareView.swift in Sources */,
 				29EF85CFA3AB4C780451D445 /* SoundManager.swift in Sources */,
 				372FDC8459A6748D7E9D3C94 /* StartView.swift in Sources */,
+				0B67969974DF1B1B7F771A85 /* Store.swift in Sources */,
 				D51B53602B1FCDC6AA02F337 /* TextureFactory.swift in Sources */,
 				B3BBA739DC2A103C56D4F25E /* Theme.swift in Sources */,
 			);
@@ -432,7 +448,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 23;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = PKB6KZ8392;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -493,7 +509,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 23;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = PKB6KZ8392;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

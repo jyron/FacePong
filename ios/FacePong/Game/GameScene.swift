@@ -187,19 +187,21 @@ final class GameScene: SKScene {
         ring2.strokeColor = Palette.magenta; ring2.fillColor = .clear; ring2.zPosition = 3; ring2.isHidden = true
         addChild(ring1); addChild(ring2)
 
-        // ambient sparkle field (promo storm) — drifts up + twinkles behind the ball
+        // ambient sparkle field — drifts up + twinkles behind the ball. Promo cranks it
+        // to a dense "storm"; the shipping court gets a sparse, dim, slow star/color
+        // field so it reads as a neon arena instead of an empty black void.
         sparkLayer.zPosition = 2
         addChild(sparkLayer)
-        let sparkN = promo ? 120 : 0
+        let sparkN = promo ? 120 : 38
         for i in 0..<sparkN {
             let rect = Bool.random()
             sparks.append(Spark(x: CGFloat.random(in: 14...(Court.W - 14)),
                                 y: CGFloat.random(in: 150...830),
-                                vx: CGFloat.random(in: -6...6),
-                                vy: CGFloat.random(in: -11 ... -2),
-                                size: CGFloat.random(in: 6...17),
+                                vx: CGFloat.random(in: (promo ? -6...6 : -2.2...2.2)),
+                                vy: CGFloat.random(in: (promo ? -11 ... -2 : -4.0 ... -0.8)),
+                                size: CGFloat.random(in: (promo ? 6...17 : 3.5...9.5)),
                                 phase: CGFloat.random(in: 0...6.28),
-                                tw: CGFloat.random(in: 1.4...3.6),
+                                tw: CGFloat.random(in: (promo ? 1.4...3.6 : 0.5...1.7)),
                                 rot: CGFloat.random(in: 0...3.14), rect: rect))
             let node = SKSpriteNode(texture: rect ? TextureFactory.crispDot : TextureFactory.softDot)
             node.blendMode = .add; node.colorBlendFactor = 1
@@ -593,6 +595,8 @@ final class GameScene: SKScene {
     private func updateSparks(dt: Double) {
         guard !sparkNodes.isEmpty else { return }
         let d = CGFloat(dt)
+        // Shipping court: keep the field subtle so it never competes with the ball.
+        let dim: CGFloat = promo ? 1.0 : 0.42
         for i in 0..<sparks.count {
             sparks[i].x += sparks[i].vx * d
             sparks[i].y += sparks[i].vy * d
@@ -606,10 +610,10 @@ final class GameScene: SKScene {
             if s.rect {
                 node.size = CGSize(width: s.size * 0.6, height: s.size * 1.85)
                 node.zRotation = s.rot + CGFloat(ambientT) * 0.6
-                node.alpha = CGFloat(tw) * 0.92
+                node.alpha = CGFloat(tw) * 0.92 * dim
             } else {
                 node.size = CGSize(width: s.size * 1.9, height: s.size * 1.9)
-                node.alpha = CGFloat(tw) * 0.62
+                node.alpha = CGFloat(tw) * 0.62 * dim
             }
         }
     }

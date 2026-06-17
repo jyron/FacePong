@@ -1,0 +1,141 @@
+{
+  "appPolicies": {
+    "eula": "",
+    "policies": []
+  },
+  "identifier": "FACEPONG_STOREKIT",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "1.99",
+      "familyShareable": false,
+      "internalID": "1000000001",
+      "localizations": [
+        {
+          "description": "Permanently unlock The Most Interesting Man rival.",
+          "displayName": "Unlock The Most Interesting Man",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.facepong.unlock.interesting",
+      "referenceName": "Unlock The Most Interesting Man",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "1.99",
+      "familyShareable": false,
+      "internalID": "1000000002",
+      "localizations": [
+        {
+          "description": "Permanently unlock The Wrestler rival.",
+          "displayName": "Unlock The Wrestler",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.facepong.unlock.wrestler",
+      "referenceName": "Unlock The Wrestler",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "1.99",
+      "familyShareable": false,
+      "internalID": "1000000003",
+      "localizations": [
+        {
+          "description": "Permanently unlock The Champ rival.",
+          "displayName": "Unlock The Champ",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.facepong.unlock.champ",
+      "referenceName": "Unlock The Champ",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "2.99",
+      "familyShareable": false,
+      "internalID": "1000000004",
+      "localizations": [
+        {
+          "description": "Permanently unlock The Dictator rival.",
+          "displayName": "Unlock The Dictator",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.facepong.unlock.dictator",
+      "referenceName": "Unlock The Dictator",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "2.99",
+      "familyShareable": false,
+      "internalID": "1000000005",
+      "localizations": [
+        {
+          "description": "Permanently unlock The President rival.",
+          "displayName": "Unlock The President",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.facepong.unlock.president",
+      "referenceName": "Unlock The President",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "2.99",
+      "familyShareable": false,
+      "internalID": "1000000006",
+      "localizations": [
+        {
+          "description": "Permanently unlock The Chairman rival.",
+          "displayName": "Unlock The Chairman",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.facepong.unlock.chairman",
+      "referenceName": "Unlock The Chairman",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "9.99",
+      "familyShareable": false,
+      "internalID": "1000000007",
+      "localizations": [
+        {
+          "description": "Unlock every rival and never run out of hearts.",
+          "displayName": "Unlock All Rivals + Unlimited Hearts",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.facepong.unlock.all",
+      "referenceName": "Unlock All Rivals + Unlimited Hearts",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "1000000008",
+      "localizations": [
+        {
+          "description": "Instantly refill your hearts back to full.",
+          "displayName": "Refill Hearts",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.facepong.hearts.refill5",
+      "referenceName": "Refill Hearts",
+      "type": "Consumable"
+    }
+  ],
+  "settings": {
+    "_applicationInternalID": "6779310642",
+    "_developerTeamID": "PKB6KZ8392",
+    "_failTransactionsEnabled": false,
+    "_lastSynchronizedDate": 0
+  },
+  "subscriptionGroups": [],
+  "version": {
+    "major": 4,
+    "minor": 0
+  }
+}

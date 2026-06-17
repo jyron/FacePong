@@ -92,6 +92,7 @@ struct Difficulty {
         .init(name: "CHAMPION",     reactionTicks: 3,  trackGain: 0.150, trackGainAway: 0.055, predict: 0.85, aimErrorUnits: 3,  coverage: 1.05, maxSpeedMul: 1.22, rampMul: 1.14, serveVYMul: 1.00, serveVXSpreadMul: 1.30),
         .init(name: "LEGEND",       reactionTicks: 2,  trackGain: 0.180, trackGainAway: 0.067, predict: 0.93, aimErrorUnits: 1.5,coverage: 1.10, maxSpeedMul: 1.32, rampMul: 1.18, serveVYMul: 1.05, serveVXSpreadMul: 1.40),
         .init(name: "GRANDMASTER",  reactionTicks: 1,  trackGain: 0.220, trackGainAway: 0.081, predict: 0.98, aimErrorUnits: 0.6,coverage: 1.15, maxSpeedMul: 1.45, rampMul: 1.22, serveVYMul: 1.19, serveVXSpreadMul: 1.50),
+        .init(name: "SUPREME",      reactionTicks: 0,  trackGain: 0.300, trackGainAway: 0.110, predict: 1.00, aimErrorUnits: 0.0,coverage: 1.22, maxSpeedMul: 1.58, rampMul: 1.28, serveVYMul: 1.30, serveVXSpreadMul: 1.65),
     ]
 
     // Default VS COMPUTER opponent: a genuine fight (≈ today's gain + lag/error + prediction),

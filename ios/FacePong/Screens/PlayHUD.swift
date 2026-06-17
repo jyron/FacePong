@@ -38,15 +38,15 @@ struct PlayHUD: View {
 
     @ViewBuilder private func playerTag(slot: Slot, name: String, trailing: Bool) -> some View {
         let coin = FaceCoin(image: slot == .p1 ? model.p1Face : model.opponentFace, slot: slot, size: 38)
-        // hearts = startingHearts minus the points this side has CONCEDED (the rival's score)
-        let hearts = GC.startingHearts - (slot == .p1 ? model.score2 : model.score1)
+        // Filling score pips: this player's points so far (first to targetScore wins).
+        let pts = slot == .p1 ? model.score1 : model.score2
         let color = Color(hex: slot == .p1 ? "#19e7ff" : "#ff2e88")
         VStack(alignment: trailing ? .trailing : .leading, spacing: 5) {
             HStack(spacing: 8) {
                 if trailing { Text(name).font(.bodyBold(12)).foregroundStyle(Color(hex: "#a59fce")); coin }
                 else { coin; Text(name).font(.bodyBold(12)).foregroundStyle(Color(hex: "#a59fce")) }
             }
-            HeartsRow(remaining: max(0, hearts), color: color, size: 13)
+            ScorePips(score: pts, color: color, size: 11)
         }
     }
 

@@ -36,5 +36,9 @@ struct RootView: View {
         .preferredColorScheme(.dark)
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+        .sheet(item: $model.paywall) { kind in
+            PaywallView(model: model, kind: kind)
+                .preferredColorScheme(.dark)
+        }
     }
 }

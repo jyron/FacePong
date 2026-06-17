@@ -3,6 +3,7 @@
 // tracks score/rally stats, drives sound, and persists faces + best rally.
 import SwiftUI
 import SpriteKit
+import Combine
 
 enum Route { case start, characters, friend, round, play, point, match, share, online }
 
@@ -38,6 +39,15 @@ final class GameModel: ObservableObject, GameSceneDelegate {
     let scene = GameScene()
     var cpuDifficulty: Difficulty = .fair   // active VS COMPUTER opponent strength
     @Published var selectedCharacter: Rival?   // the chosen famous-face rival (VS COMPUTER)
+
+    // Monetization + progression
+    let store = Store()                       // StoreKit 2 (unlocks + heart refill)
+    let hearts = HeartBank()                  // global hearts energy
+    @Published var beatenRivalIDs: Set<String> = []   // rivals you've defeated (persisted)
+    @Published var justConqueredRival = false         // this match was a brand-new conquest
+    @Published var paywall: PaywallKind?              // active paywall sheet, if any
+    private var bag = Set<AnyCancellable>()
+
     private var pendingServe: Slot = .p2
     private var matchStart = Date()
 
@@ -55,6 +65,17 @@ final class GameModel: ObservableObject, GameSceneDelegate {
         scene.scaleMode = .aspectFit
         scene.size = CGSize(width: Court.W, height: Court.H)
         loadPersisted()
+        // A heart refill purchase fills the pool; an all-access purchase grants unlimited
+        // hearts. Keep the heart bank's `unlimited` flag mirrored to the entitlement.
+        store.onHeartsRefill = { [weak self] in self?.hearts.refillFull() }
+        hearts.unlimited = store.hasAllAccess
+        store.onEntitlementsChanged = { [weak self] in
+            guard let self else { return }
+            self.hearts.unlimited = self.store.hasAllAccess
+            self.objectWillChange.send()
+        }
+        store.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }.store(in: &bag)
+        hearts.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }.store(in: &bag)
         // Defer audio engine + buffer loading off the synchronous launch path (8 WAV
         // loads + AVAudioEngine.start) so nothing heavy runs before the first frame.
         DispatchQueue.main.async { Sound.prepare() }
@@ -71,6 +92,15 @@ final class GameModel: ObservableObject, GameSceneDelegate {
         #endif
         // QA: FP_NOFACES=1 clears both faces to verify the default robot coin.
         if ProcessInfo.processInfo.environment["FP_NOFACES"] == "1" { p1Face = nil; p2Face = nil; syncFaces() }
+        // QA: store/hearts hooks for verifying the paywalls in the simulator.
+        if ProcessInfo.processInfo.environment["FP_RESET_IAP"] == "1" {
+            Store.debugResetUnlocks(); beatenRivalIDs = []; persistBeaten()
+            Task { await store.refreshEntitlements() }
+        }
+        if let h = ProcessInfo.processInfo.environment["FP_HEARTS"], let n = Int(h) { hearts.debugSet(n) }
+        if let b = ProcessInfo.processInfo.environment["FP_BEATEN"] {
+            beatenRivalIDs = Set(b.split(separator: ",").map(String.init)); persistBeaten()
+        }
         // QA: FP_RIVAL=<id> forces a specific rival for the round/play/auto paths.
         if let rid = ProcessInfo.processInfo.environment["FP_RIVAL"],
            let r = Rival.roster.first(where: { $0.id == rid }) {
@@ -80,7 +110,8 @@ final class GameModel: ObservableObject, GameSceneDelegate {
         if let r = ProcessInfo.processInfo.environment["FP_ROUTE"] {
             score1 = 5; score2 = 3; roundNum = 3; topRally = 85; aces = 2; lastScorer = .p1; liveRally = 12
             switch r {
-            case "match": route = .match
+            case "match": route = .match; justConqueredRival = true   // show the CONQUERED stamp
+            case "matchlose": score1 = 3; score2 = 5; route = .match
             case "point": score1 = 3; route = .point
             case "share": route = .share
             case "friend": route = .friend
@@ -144,8 +175,43 @@ final class GameModel: ObservableObject, GameSceneDelegate {
     private func loadPersisted() {
         longestRally = UserDefaults.standard.integer(forKey: "facepong.best")
         if let d = UserDefaults.standard.data(forKey: "facepong.p1"), let i = UIImage(data: d) { p1Face = i }
+        beatenRivalIDs = Set(UserDefaults.standard.stringArray(forKey: "facepong.beaten") ?? [])
     }
     private func persistBest() { UserDefaults.standard.set(longestRally, forKey: "facepong.best") }
+    private func persistBeaten() { UserDefaults.standard.set(Array(beatenRivalIDs), forKey: "facepong.beaten") }
+
+    var rivalsBeatenCount: Int { beatenRivalIDs.count }
+    func hasBeaten(_ rival: Rival) -> Bool { beatenRivalIDs.contains(rival.id) }
+
+    // MARK: monetization gates
+
+    /// The single entry point for "I want to play this rival" — applies the unlock and
+    /// hearts gates, raising a paywall instead of starting the match when blocked.
+    /// Records the target first so a refill/unlock purchase resumes into the RIGHT rival.
+    func play(_ rival: Rival) {
+        selectedCharacter = rival
+        if !store.isUnlocked(rival) { paywall = .unlock(rival); return }
+        if rival.premium && !hearts.hasHeart { paywall = .refill; return }
+        startCPU(rival)
+    }
+
+    /// "TRY AGAIN" from the defeat screen — re-runs the gates for the same rival.
+    func retry() {
+        guard let r = selectedCharacter else { return }
+        play(r)
+    }
+
+    /// Called by a paywall after a successful purchase to continue into the match.
+    /// Starts directly (the player just paid — don't re-gate them).
+    func proceedAfterPurchase() {
+        let kind = paywall
+        paywall = nil
+        switch kind {
+        case .unlock(let r): startCPU(r)
+        case .refill: if let r = selectedCharacter { startCPU(r) }
+        case .none: break
+        }
+    }
 
     // MARK: flow
 
@@ -156,6 +222,7 @@ final class GameModel: ObservableObject, GameSceneDelegate {
         selectedCharacter = rival
         cpuDifficulty = rival.difficulty
         online = false
+        justConqueredRival = false
         p2Face = rival.face          // opponent paddle = the rival's cutout (in-memory, not persisted)
         scene.resetScores()
         score1 = 0; score2 = 0; roundNum = 1; topRally = 0; aces = 0
@@ -200,7 +267,16 @@ final class GameModel: ObservableObject, GameSceneDelegate {
         if slot == .p1 && rally == 0 { aces += 1 }
         scene.stop()
         if p1 >= GC.targetScore || p2 >= GC.targetScore {
-            if slot == .p1 { Sound.fanfare() } else { Sound.lose() }
+            let youWon = p1 >= GC.targetScore
+            if !online, let rival = selectedCharacter {
+                if youWon {
+                    justConqueredRival = !beatenRivalIDs.contains(rival.id)
+                    if justConqueredRival { beatenRivalIDs.insert(rival.id); persistBeaten() }
+                } else if rival.premium {
+                    hearts.spendOnLoss()   // losing to a premium rival burns a heart
+                }
+            }
+            youWon ? Sound.fanfare() : Sound.lose()
             route = .match
         } else {
             slot == .p1 ? Sound.score() : Sound.lose()
