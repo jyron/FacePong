@@ -1,7 +1,6 @@
 # Build artifacts (regenerate with tools/sim.sh / xcodebuild)
 .build/
-.build-dev/
-.build-archive/
+.build-*/
 build/
 DerivedData/
 
