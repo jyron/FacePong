@@ -39,6 +39,7 @@ final class GameModel: ObservableObject, GameSceneDelegate {
     let scene = GameScene()
     var cpuDifficulty: Difficulty = .fair   // active VS COMPUTER opponent strength
     @Published var selectedCharacter: Rival?   // the chosen famous-face rival (VS COMPUTER)
+    @Published var p1Rival: Rival?             // promo only: bottom paddle is a named rival, not "YOU"
 
     // Monetization + progression
     let store = Store()                       // StoreKit 2 (unlocks + heart refill)
@@ -106,6 +107,12 @@ final class GameModel: ObservableObject, GameSceneDelegate {
            let r = Rival.roster.first(where: { $0.id == rid }) {
             selectedCharacter = r; cpuDifficulty = r.difficulty; p2Face = r.face; syncFaces()
         }
+        // QA/promo: FP_P1RIVAL=<id> sets the BOTTOM (player) paddle to a roster face too,
+        // so a promo capture can stage a famous-vs-famous match (e.g. Obama vs Putin).
+        if let pid = ProcessInfo.processInfo.environment["FP_P1RIVAL"],
+           let r = Rival.roster.first(where: { $0.id == pid }) {
+            p1Face = r.face; p1Rival = r; syncFaces()
+        }
         // Jump to a given screen for visual QA: launch with FP_ROUTE=match|point|…
         if let r = ProcessInfo.processInfo.environment["FP_ROUTE"] {
             score1 = 5; score2 = 3; roundNum = 3; topRally = 85; aces = 2; lastScorer = .p1; liveRally = 12
@@ -152,6 +159,8 @@ final class GameModel: ObservableObject, GameSceneDelegate {
         if online { return oppName.isEmpty ? "RIVAL" : oppName }
         return selectedCharacter?.name ?? cpuDifficulty.name
     }
+    /// The bottom paddle's label — normally "YOU", but a named rival in a promo capture (FP_P1RIVAL).
+    var playerName: String { p1Rival?.name ?? "YOU" }
 
     var elapsed: TimeInterval { Date().timeIntervalSince(matchStart) }
     var elapsedString: String {
@@ -284,15 +293,15 @@ final class GameModel: ObservableObject, GameSceneDelegate {
         }
     }
 
-    func gamePaddleHit(_ slot: Slot, rally: Int) {
-        Sound.paddle(slot, rally: rally)
+    func gamePaddleHit(_ slot: Slot, rally: Int, x: CGFloat) {
+        Sound.paddle(slot, rally: rally, pan: Float((x * 2 - 1) * 0.7))   // pan to the ball's x
         if rally > 0 && rally % 5 == 0 { Sound.milestone() }
         liveRally = rally
         topRally = max(topRally, rally)
         if rally > longestRally { longestRally = rally; persistBest() }
     }
 
-    func gameWallHit() { Sound.wall() }
+    func gameWallHit(x: CGFloat) { Sound.wall(pan: Float((x * 2 - 1) * 0.7)) }
 
     // MARK: online
 

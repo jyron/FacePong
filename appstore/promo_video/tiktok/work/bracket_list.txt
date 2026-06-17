@@ -1,0 +1,6 @@
+file '/Users/jyron/src/facepong/appstore/promo_video/tiktok/work/bracket_0.mp4'
+file '/Users/jyron/src/facepong/appstore/promo_video/tiktok/work/bracket_1.mp4'
+file '/Users/jyron/src/facepong/appstore/promo_video/tiktok/work/bracket_2.mp4'
+file '/Users/jyron/src/facepong/appstore/promo_video/tiktok/work/bracket_3.mp4'
+file '/Users/jyron/src/facepong/appstore/promo_video/tiktok/work/bracket_4.mp4'
+file '/Users/jyron/src/facepong/appstore/promo_video/tiktok/work/bracket_5.mp4'

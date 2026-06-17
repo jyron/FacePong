@@ -44,6 +44,11 @@ struct StartView: View {
             Spacer(minLength: 8)
         }
         .padding(.top, 30)
+        .overlay(alignment: .topTrailing) { MuteButton().padding(.trailing, 16).padding(.top, 6) }
+        .overlay(alignment: .topLeading) {
+            Text(buildLabel).font(.body(10)).tracking(1).foregroundStyle(Color(hex: "#6a6496"))
+                .padding(.leading, 16).padding(.top, 16)
+        }
         .overlay { if model.processingFace { ProcessingOverlay() } }
         .confirmationDialog("Set your face",
                             isPresented: $showSource, titleVisibility: .visible) {
@@ -65,6 +70,14 @@ struct StartView: View {
         .alert("No face found", isPresented: Binding(get: { model.pickError != nil }, set: { _ in model.pickError = nil })) {
             Button("OK", role: .cancel) {}
         } message: { Text(model.pickError ?? "") }
+    }
+
+    /// Version + build (from the bundle, so it always matches the uploaded build) — shown on the
+    /// home screen so each TestFlight build is identifiable at a glance.
+    private var buildLabel: String {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
+        return "v\(v) · BUILD \(b)"
     }
 
     @ViewBuilder private func stat(_ label: String, _ value: String, _ color: Color) -> some View {

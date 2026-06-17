@@ -35,23 +35,38 @@ enum Sound {
         configureSession()
         buildEngine()
         prepareHaptics()
+        installObservers()
+        activateAndStart()   // best-effort now; re-tried on first sound + on becoming active
+        #if DEBUG
+        let s = AVAudioSession.sharedInstance()
+        print("FPAUDIO ready engineRunning=\(engine.isRunning) shep=\(shepFrames.count) " +
+              "voices=\(paddleChannels.count) mixWithOthers=\(s.categoryOptions.contains(.mixWithOthers)) muted=\(isMuted)")
+        #endif
     }
 
-    /// Paddle hit. Pitch climbs with the rally and p2 sits a minor third lower.
-    static func paddle(_ slot: Slot, rally: Int) {
-        let baseRate = min(1.0 + Float(rally) * 0.035, 1.7)
-        let rate = slot == .p1 ? baseRate : baseRate * 0.82
-        play(channel: nextPaddleChannel(), rate: rate, volume: 1.0)
+    /// Paddle hit. The rally climbs an *endless* pentatonic SHEPARD scale: one precomputed
+    /// frame is played per hit, so the pitch rises a note every contact, but each frame is
+    /// stacked across octaves with a fixed spectral envelope — the spectrum one octave up is
+    /// identical, so the octave wrap is inaudible and a long rally never hits a ceiling or
+    /// audibly resets. Pitch is baked into the frame (play at rate 1.0); a tiny level jitter
+    /// + per-frame timbre keep repeats fresh; `pan` (-1…+1) places the hit at the ball's x.
+    static func paddle(_ slot: Slot, rally: Int, pan: Float = 0) {
+        let frame = max(0, rally - 1) % shepFrames.count   // climb one Shepard step per hit
+        // Trim level: the vibe frames ring ~1.25s and overlap heavily in a fast rally, so keep
+        // headroom on the mixer (many simultaneous voices) to avoid output clipping.
+        let vol = 0.62 * (1 + Float.random(in: -0.08...0.08))
+        play(channel: nextPaddleChannel(), override: shepFrames[frame], rate: 1.0, volume: vol, pan: pan)
         switch slot {
         case .p1: impactMedium.impactOccurred()
         case .p2: impactLight.impactOccurred()
         }
     }
 
-    /// Wall bounce. Slight pitch randomisation keeps repeated hits from sounding robotic.
-    static func wall() {
+    /// Wall bounce. A soft, duller "tok" (no rally pitch — a calm fixed reference under the
+    /// climbing rally); slight pitch randomisation + pan to the ball's x.
+    static func wall(pan: Float = 0) {
         let rate = Float.random(in: 0.9 ..< 1.15)
-        play(channel: wallChannel, rate: rate, volume: 0.7)
+        play(channel: wallChannel, rate: rate, volume: 0.7, pan: pan)
     }
 
     /// Local player scored a point.
@@ -92,6 +107,12 @@ enum Sound {
     /// blip and a p2 return never cancel each other during fast rallies.
     private static var paddleChannels: [SoundChannel] = []
     private static var paddleIdx = 0
+    /// 5 humanised "pock" variants, round-robined no-immediate-repeat to kill ear fatigue.
+    private static var paddleVariants: [AVAudioPCMBuffer] = []
+    private static var lastVariant = -1
+    /// 2-octave vibraphone Shepard rally cycle (shep_0…9): one frame per hit, octave-seamless
+    /// so the rally pitch climbs endlessly. Falls back to the plain pock variants if unavailable.
+    private static var shepFrames: [AVAudioPCMBuffer] = []
 
     private static var wallChannel     = SoundChannel()
     private static var scoreChannel    = SoundChannel()
@@ -113,30 +134,79 @@ enum Sound {
 
     // MARK: - session
 
+    /// Player's in-app mute (persisted). Mutes ONLY this game's audio; other apps' audio is
+    /// never affected — the session mixes with others rather than interrupting them.
+    static var isMuted: Bool {
+        get { UserDefaults.standard.bool(forKey: "facepong.muted") }
+        set { UserDefaults.standard.set(newValue, forKey: "facepong.muted") }
+    }
+
     private static func configureSession() {
-        let session = AVAudioSession.sharedInstance()
-        do {
-            // .playback category plays through the iOS silent switch.
-            try session.setCategory(.playback, mode: .default, options: [])
-            try session.setActive(true)
-        } catch {
-            // Non-fatal: audio will simply respect the silent switch.
+        // .playback so audio plays through the iOS ring/silent switch; .mixWithOthers so opening
+        // the game does NOT silence music/podcasts already playing — the game's sounds layer on
+        // top (and the player can mute the game independently via isMuted). Activation + engine
+        // start are done in activateAndStart() rather than here, so a launch-time activation
+        // that fails (app not yet foreground) — or a session later stolen by another component
+        // — self-heals on the next sound / on becoming active instead of going permanently silent.
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
+    }
+
+    private static var observersInstalled = false
+
+    private static func installObservers() {
+        guard !observersInstalled else { return }
+        observersInstalled = true
+        let nc = NotificationCenter.default
+        // Becoming active covers the common case: the launch-time activation ran before the
+        // app was foreground (throws on device) — re-activate once we're actually active.
+        nc.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in activateAndStart() }
+        nc.addObserver(forName: AVAudioSession.routeChangeNotification, object: nil, queue: .main) { _ in activateAndStart() }
+        nc.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { _ in activateAndStart() }
+        nc.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { note in
+            if let v = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+               AVAudioSession.InterruptionType(rawValue: v) == .ended { activateAndStart() }
         }
+    }
+
+    /// (Re)assert the playback category, activate the session, and (re)start the engine. Safe
+    /// to call repeatedly — only does work when something isn't already in the desired state,
+    /// so it's cheap on the audio hot path yet self-heals after interruptions, route changes,
+    /// or a launch-time activation that failed because the app wasn't foreground yet.
+    @discardableResult
+    private static func activateAndStart() -> Bool {
+        let session = AVAudioSession.sharedInstance()
+        if session.category != .playback || !session.categoryOptions.contains(.mixWithOthers) {
+            try? session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+        }
+        do { try session.setActive(true) } catch {
+            #if DEBUG
+            print("FPAUDIO setActive FAILED: \(error)")
+            #endif
+        }
+        if !engine.isRunning {
+            do { try engine.start() } catch {
+                #if DEBUG
+                print("FPAUDIO engine.start FAILED: \(error)")
+                #endif
+            }
+        }
+        engineReady = engine.isRunning
+        return engineReady
     }
 
     // MARK: - engine setup
 
     private static func buildEngine() {
-        // Build two paddle channels.
-        paddleChannels = [SoundChannel(), SoundChannel()]
+        // 8 paddle voices round-robined so the long-ringing vibe rally frames overlap
+        // (a fast rally piles up many tails) instead of cutting each other off.
+        paddleChannels = (0..<8).map { _ in SoundChannel() }
 
         let allChannels: [SoundChannel] = paddleChannels + [
             wallChannel, scoreChannel, loseChannel,
             milestoneChannel, tickChannel, fanfareChannel,
         ]
 
-        let fileNames: [String] = [
-            "paddle", "paddle",
+        let fileNames: [String] = Array(repeating: "paddle", count: paddleChannels.count) + [
             "wall", "score", "lose",
             "milestone", "tick", "fanfare",
         ]
@@ -152,22 +222,26 @@ enum Sound {
             engine.attach(channel.player)
             engine.attach(channel.varispeed)
 
-            // Chain: player → varispeed → mixer.
-            // Use the buffer's processing format for the player→varispeed leg so
-            // AVAudioEngine doesn't have to guess; pass nil on the varispeed→mixer
-            // leg and let the engine insert a format converter if needed.
+            // Chain: player → varispeed → mixer, with the buffer's format on BOTH legs.
+            // Passing nil on the varispeed→mixer leg makes the engine infer an output format
+            // the output chain rejects (AUGraph error -10868 kAudioUnitErr_FormatNotSupported),
+            // so engine.start() throws and the whole app goes silent. Using the explicit
+            // (mono 44.1 kHz) buffer format on both legs starts the engine cleanly.
             let bufFormat = channel.buffer?.format
             engine.connect(channel.player,    to: channel.varispeed, format: bufFormat)
-            engine.connect(channel.varispeed, to: mixer,             format: nil)
+            engine.connect(channel.varispeed, to: mixer,             format: bufFormat)
         }
 
-        do {
-            try engine.start()
-            engineReady = true
-        } catch {
-            // Audio unavailable — all play() calls will no-op.
-            engineReady = false
-        }
+        // 5 humanised paddle "pock" variants (all share the paddle format), round-robined
+        // per hit; fall back to the single paddle buffer if any are missing.
+        paddleVariants = (0..<5).compactMap { loadBuffer(named: "paddle_\($0)") }
+        if paddleVariants.isEmpty, let one = loadBuffer(named: "paddle") { paddleVariants = [one] }
+
+        // 2-octave vibraphone Shepard rally frames (10); fall back to the plain pocks if missing.
+        shepFrames = (0..<10).compactMap { loadBuffer(named: "shep_\($0)") }
+        if shepFrames.isEmpty { shepFrames = paddleVariants }
+        // The engine is started by activateAndStart() (called from prepare and re-tried on the
+        // first sound / on becoming active), not here — so a launch-time start that fails recovers.
     }
 
     /// Load a wav from the app bundle into a PCM buffer.
@@ -194,14 +268,25 @@ enum Sound {
         return ch
     }
 
-    private static func play(channel: SoundChannel, rate: Float, volume: Float) {
-        guard engineReady, let buffer = channel.buffer else { return }
+    /// A random paddle "pock" variant that is never the same as the immediately previous one.
+    private static func nextPaddleVariant() -> AVAudioPCMBuffer? {
+        guard !paddleVariants.isEmpty else { return nil }
+        var i = Int.random(in: 0..<paddleVariants.count)
+        if paddleVariants.count > 1 { while i == lastVariant { i = Int.random(in: 0..<paddleVariants.count) } }
+        lastVariant = i
+        return paddleVariants[i]
+    }
+
+    private static func play(channel: SoundChannel, override buf: AVAudioPCMBuffer? = nil,
+                             rate: Float, volume: Float, pan: Float = 0) {
+        guard !isMuted else { return }                // player muted the game (audio only; haptics still fire)
+        if !engine.isRunning { activateAndStart() }   // self-heal: a dead session/engine revives here
+        guard engine.isRunning, let buffer = buf ?? channel.buffer else { return }
 
         // Varispeed rate: 1.0 = normal, 2.0 = double speed / octave up.
         channel.varispeed.rate = rate
-
-        // Volume via player volume property.
         channel.player.volume = volume
+        channel.player.pan = max(-1, min(1, pan))   // intimate stereo: hit sits at the ball's x
 
         // Schedule buffer for immediate one-shot playback.
         // Using scheduleBuffer without a completion handler keeps this fire-and-

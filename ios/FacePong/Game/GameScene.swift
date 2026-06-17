@@ -4,13 +4,14 @@
 // it drives a node. Faithful port of PongCourt.tsx: additive comet trail,
 // 5-layer neon ball, rally heat, impact rings, confetti, screen shake, face pops.
 import SpriteKit
+import QuartzCore
 
 enum GameMode { case attract, localCPU, frozen, online }
 
 protocol GameSceneDelegate: AnyObject {
     func gameDidScore(_ slot: Slot, rally: Int, p1: Int, p2: Int)
-    func gamePaddleHit(_ slot: Slot, rally: Int)
-    func gameWallHit()
+    func gamePaddleHit(_ slot: Slot, rally: Int, x: CGFloat)   // x = ball x normalised 0…1
+    func gameWallHit(x: CGFloat)
 }
 
 final class GameScene: SKScene {
@@ -37,6 +38,12 @@ final class GameScene: SKScene {
     // never-miss hot rally — so a screen-recording matches appstore/enhance.py.
     // Off → the tasteful shipping look (the gameplay improvements still apply).
     let promo = ProcessInfo.processInfo.environment["FP_PROMO"] == "1"
+
+    // Promo capture: emit a hit-event log (+ a one-frame full-screen sync flash on the
+    // first gameplay frame) so an ad builder can place the match's real sounds at the
+    // exact on-screen moments. Gated on promo mode; invisible/no-op in the shipping app.
+    private var didSync = false
+    private var syncFlash = SKSpriteNode()
 
     // ---- trail ring buffer (court space) ---- longer + brighter = a real comet
     private let trailLen = 48
@@ -228,6 +235,13 @@ final class GameScene: SKScene {
             b.colorBlendFactor = 1; b.color = GameScene.splashColors[i % pal]; b.isHidden = true
             confettiLayer.addChild(b); confetti2.append(b)
         }
+
+        // promo sync clapper (see didSync): a full-screen white flash shown on the first
+        // gameplay frame, logged with a timestamp so an ad can align audio to the video.
+        syncFlash = SKSpriteNode(color: .white, size: CGSize(width: Court.W, height: Court.H))
+        syncFlash.position = CGPoint(x: Court.W / 2, y: Court.H / 2)
+        syncFlash.zPosition = 100; syncFlash.alpha = 0; syncFlash.isHidden = true
+        addChild(syncFlash)
     }
 
     private func makeFXSprite(_ tex: SKTexture) -> SKSpriteNode {
@@ -352,6 +366,15 @@ final class GameScene: SKScene {
         lastTime = currentTime
         if dt > 100 { dt = 100 }
 
+        // Promo: clapper flash + sync log on the very first gameplay frame.
+        if promo && !didSync && running {
+            didSync = true
+            syncFlash.isHidden = false
+            syncFlash.alpha = 1
+            syncFlash.run(.fadeOut(withDuration: 0.12))
+            print("FPEVT SYNC \(CACurrentMediaTime())")
+        }
+
         if mode == .online {
             onlineTick()
         } else if running {
@@ -421,12 +444,14 @@ final class GameScene: SKScene {
             shakeAmp = min(2 + CGFloat(hitRally) * 0.2, 5.5)
             shakeT = 0
         }
-        gameDelegate?.gamePaddleHit(slot, rally: hitRally)
+        gameDelegate?.gamePaddleHit(slot, rally: hitRally, x: engine.s.ballX / Court.W)
+        if promo { print("FPEVT HIT \(slot == .p1 ? "p1" : "p2") \(hitRally) \(String(format: "%.4f", engine.s.ballX / Court.W)) \(CACurrentMediaTime())") }
     }
 
     private func onWallHit() {
         pulseT = 0
-        gameDelegate?.gameWallHit()
+        gameDelegate?.gameWallHit(x: engine.s.ballX / Court.W)
+        if promo { print("FPEVT WALL \(String(format: "%.4f", engine.s.ballX / Court.W)) \(CACurrentMediaTime())") }
     }
 
     private func onScore(_ slot: Slot) {

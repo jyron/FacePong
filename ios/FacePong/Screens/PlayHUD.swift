@@ -2,6 +2,22 @@
 // score, the live rally pill, a quit button, and the "RALLY xN" milestone badge.
 import SwiftUI
 
+/// A speaker toggle that mutes only this game's audio (other apps keep playing). Persisted
+/// via @AppStorage on the same key SoundManager reads, so the two stay in sync. Reused on the
+/// home screen and the in-match HUD.
+struct MuteButton: View {
+    @AppStorage("facepong.muted") private var muted = false
+    var body: some View {
+        Button { muted.toggle() } label: {
+            Image(systemName: muted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(Color(hex: muted ? "#ff2e88" : "#a59fce"))
+                .padding(10)
+                .background(Circle().fill(Color(hex: "#14122a")))
+        }
+    }
+}
+
 struct PlayHUD: View {
     @ObservedObject var model: GameModel
     @State private var milestone: Int?
@@ -14,19 +30,22 @@ struct PlayHUD: View {
                 Spacer()
                 NeonPill(text: "RALLY · \(model.liveRally)")
                 Spacer()
-                playerTag(slot: .p1, name: "YOU", trailing: true)
+                playerTag(slot: .p1, name: model.playerName, trailing: true)
             }
             .padding(.horizontal, 18)
             .padding(.top, 8)
             Spacer()
         }
         .overlay(alignment: .topTrailing) {
-            Button { model.online ? model.leaveOnline() : model.toMenu() } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(Color(hex: "#a59fce"))
-                    .padding(10)
-                    .background(Circle().fill(Color(hex: "#14122a")))
+            HStack(spacing: 10) {
+                MuteButton()
+                Button { model.online ? model.leaveOnline() : model.toMenu() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Color(hex: "#a59fce"))
+                        .padding(10)
+                        .background(Circle().fill(Color(hex: "#14122a")))
+                }
             }
             .padding(.trailing, 16).padding(.top, 70)
         }
