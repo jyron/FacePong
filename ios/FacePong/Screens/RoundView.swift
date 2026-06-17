@@ -12,6 +12,18 @@ struct RoundView: View {
             Spacer()
             Text("ROUND \(model.roundNum)")
                 .font(.bodyBold(15)).tracking(4).foregroundStyle(Color(hex: "#a59fce"))
+            if !model.online, let rival = model.selectedCharacter {
+                VStack(spacing: 6) {
+                    Text("VS  \(rival.name)")
+                        .font(.display(18)).foregroundStyle(Color(hex: "#ff2e88"))
+                        .neonGlow(Color(hex: "#ff2e88"), radius: 12)
+                        .multilineTextAlignment(.center)
+                    Text("“\(rival.taunt)”")
+                        .font(.body(13)).italic().foregroundStyle(Color(hex: "#a59fce"))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 30)
+                }
+            }
             Text(go ? "GO" : "\(count)")
                 .font(.display(110))
                 .foregroundStyle(Color(hex: "#d4ff3d"))

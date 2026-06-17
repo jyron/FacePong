@@ -25,8 +25,8 @@ enum GC {
     static let wallPad: CGFloat = 6          // ball inset from left/right walls
     static let paddleMargin: CGFloat = 44 + 8 // clamp for paddle center x (PADDLE_R + 8)
 
-    static let maxSpeed: CGFloat = 10.6      // max ball speed (units/tick)
-    static let rallyRamp: CGFloat = 1.06     // ball speeds up this much per paddle hit
+    static let maxSpeed: CGFloat = 14.0      // max ball speed (units/tick) — a long rally gets genuinely fast
+    static let rallyRamp: CGFloat = 1.085    // ball speeds up this much per paddle hit (compounds over the rally)
     static let serveVY: CGFloat = 6.2        // vertical serve speed
     static let serveVXSpread: CGFloat = 2.4  // random horizontal spread on serve
     static let paddleBounce: CGFloat = 5.2   // how much paddle hit offset bends vx

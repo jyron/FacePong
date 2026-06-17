@@ -193,32 +193,62 @@ private func circularCoin(_ image: UIImage, diameter: CGFloat) -> UIImage {
     }
 }
 
+// A clean neon ROBOT emblem — the CPU placeholder when no real face is set
+// (e.g. an online opponent before their cutout arrives). A glowing visor head
+// with luminous eyes and an antenna, on the slot-colored disc. Intentional and
+// arcade, not the old crude drawn smiley.
 private func defaultCoinTexture(slot: Slot) -> SKTexture {
-    let diameter: CGFloat = 256
-    let s = CGSize(width: diameter, height: diameter)
+    let d: CGFloat = 256
+    let s = CGSize(width: d, height: d)
+    let accent = (slot == .p1 ? Palette.cyan : Palette.magenta)
     let img = UIGraphicsImageRenderer(size: s).image { ctx in
         let c = ctx.cgContext
         UIBezierPath(ovalIn: CGRect(origin: .zero, size: s)).addClip()
+
+        // base disc gradient
         let space = CGColorSpaceCreateDeviceRGB()
         let top = slot == .p1 ? SKColor(hex: "#0c2b3a") : SKColor(hex: "#3a0c2a")
         let bot = slot == .p1 ? SKColor(hex: "#0a1726") : SKColor(hex: "#260a1c")
         if let grad = CGGradient(colorsSpace: space, colors: [top.cgColor, bot.cgColor] as CFArray, locations: [0, 1]) {
-            c.drawLinearGradient(grad, start: .zero, end: CGPoint(x: 0, y: diameter), options: [])
+            c.drawLinearGradient(grad, start: .zero, end: CGPoint(x: 0, y: d), options: [])
         }
-        let accent = (slot == .p1 ? Palette.cyan : Palette.magenta)
-        let faceColor = slot == .p1 ? SKColor(hex: "#f1d4b8") : SKColor(hex: "#f0c9a0")
-        c.setFillColor(faceColor.cgColor)
-        let fr = diameter * 0.42
-        c.fillEllipse(in: CGRect(x: diameter/2 - fr/2, y: diameter*0.30, width: fr, height: fr*1.15))
-        c.setFillColor(accent.cgColor)
-        let eye = diameter * 0.05
-        c.fillEllipse(in: CGRect(x: diameter*0.40 - eye/2, y: diameter*0.50, width: eye, height: eye))
-        c.fillEllipse(in: CGRect(x: diameter*0.60 - eye/2, y: diameter*0.50, width: eye, height: eye))
+
+        c.setLineCap(.round)
+        c.setLineJoin(.round)
+        // soft glow for everything drawn in the accent color
+        c.setShadow(offset: .zero, blur: d * 0.045, color: accent.withAlphaComponent(0.9).cgColor)
+
+        // antenna (UIKit coords: y grows DOWN, so "up" = smaller y)
         c.setStrokeColor(accent.cgColor)
-        c.setLineWidth(diameter*0.02)
-        c.addArc(center: CGPoint(x: diameter/2, y: diameter*0.62), radius: diameter*0.10,
-                 startAngle: .pi*0.15, endAngle: .pi*0.85, clockwise: false)
+        c.setLineWidth(d * 0.02)
+        c.move(to: CGPoint(x: d/2, y: d*0.26))
+        c.addLine(to: CGPoint(x: d/2, y: d*0.16))
         c.strokePath()
+        c.setFillColor(accent.cgColor)
+        c.fillEllipse(in: CGRect(x: d/2 - d*0.028, y: d*0.10, width: d*0.056, height: d*0.056))
+
+        // visor head (rounded square)
+        let hw = d*0.52, hh = d*0.44
+        let head = CGRect(x: d/2 - hw/2, y: d*0.26, width: hw, height: hh)
+        c.setStrokeColor(accent.cgColor)
+        c.setLineWidth(d * 0.026)
+        c.addPath(UIBezierPath(roundedRect: head, cornerRadius: d*0.10).cgPath)
+        c.strokePath()
+
+        // glowing eyes
+        let eye = d*0.115
+        let eyeY = head.minY + hh*0.30
+        c.setFillColor(accent.cgColor)
+        c.fillEllipse(in: CGRect(x: d*0.385 - eye/2, y: eyeY, width: eye, height: eye))
+        c.fillEllipse(in: CGRect(x: d*0.615 - eye/2, y: eyeY, width: eye, height: eye))
+
+        // mouth — a small row of teeth bars
+        let mY = head.minY + hh*0.66, mH = d*0.05
+        c.setFillColor(accent.withAlphaComponent(0.85).cgColor)
+        for i in 0..<4 {
+            let bx = d*0.40 + CGFloat(i) * d*0.053
+            c.fill(CGRect(x: bx, y: mY, width: d*0.03, height: mH))
+        }
     }
     return SKTexture(image: img)
 }

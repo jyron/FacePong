@@ -25,18 +25,13 @@ struct StartView: View {
 
             NeonPill(text: "🏓  5 HEARTS · YOUR FACE IS THE PADDLE")
 
-            HStack(spacing: 18) {
-                faceColumn(.p1)
-                Circle().fill(Color(hex: "#d4ff3d")).frame(width: 16, height: 16)
-                    .neonGlow(Color(hex: "#d4ff3d"), radius: 10)
-                faceColumn(.p2)
-            }
-            .padding(.vertical, 8)
+            faceColumn(.p1)
+                .padding(.vertical, 8)
 
             VStack(spacing: 14) {
-                NeonButton(title: "QUICK MATCH", kind: .lime) { model.quickMatch() }
-                NeonButton(title: "PLAY A FRIEND", kind: .cyan) { model.route = .friend }
-                NeonButton(title: "VS COMPUTER", kind: .ghost) { model.startCPU() }
+                NeonButton(title: "VS COMPUTER", kind: .lime) { model.route = .characters }
+                NeonButton(title: "QUICK MATCH", kind: .cyan) { model.quickMatch() }
+                NeonButton(title: "PLAY A FRIEND", kind: .ghost) { model.route = .friend }
             }
             .padding(.horizontal, 28)
 
@@ -48,7 +43,7 @@ struct StartView: View {
         }
         .padding(.top, 30)
         .overlay { if model.processingFace { ProcessingOverlay() } }
-        .confirmationDialog("Set \(pickingSlot == .p1 ? "your" : "the opponent's") face",
+        .confirmationDialog("Set your face",
                             isPresented: $showSource, titleVisibility: .visible) {
             // Only offer the camera when one is actually available (it isn't on the
             // Simulator / Mac / camera-restricted review devices).
@@ -71,11 +66,11 @@ struct StartView: View {
     }
 
     @ViewBuilder private func faceColumn(_ slot: Slot) -> some View {
-        VStack(spacing: 8) {
-            FaceCard(image: slot == .p1 ? model.p1Face : model.p2Face, slot: slot, size: 112)
+        VStack(spacing: 10) {
+            FaceCard(image: model.p1Face, slot: slot, size: 150)
                 .onTapGesture { pickingSlot = slot; showSource = true }
-            Text((slot == .p1 ? model.p1Face : model.p2Face) == nil ? "tap to add your face" : "tap to change")
-                .font(.body(11)).foregroundStyle(Color(hex: "#6a6496"))
+            Text(model.p1Face == nil ? "TAP TO ADD YOUR FACE" : "tap to change your face")
+                .font(.bodyBold(12)).tracking(1).foregroundStyle(Color(hex: "#a59fce"))
         }
     }
 

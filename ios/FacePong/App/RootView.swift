@@ -23,6 +23,7 @@ struct RootView: View {
 
             switch model.route {
             case .start:  StartView(model: model)
+            case .characters: CharacterSelectView(model: model)
             case .friend: FriendView(model: model)
             case .round:  RoundView(model: model)
             case .play:   PlayHUD(model: model)

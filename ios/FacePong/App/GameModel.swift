@@ -4,7 +4,7 @@
 import SwiftUI
 import SpriteKit
 
-enum Route { case start, friend, round, play, point, match, share, online }
+enum Route { case start, characters, friend, round, play, point, match, share, online }
 
 @MainActor
 final class GameModel: ObservableObject, GameSceneDelegate {
@@ -37,6 +37,7 @@ final class GameModel: ObservableObject, GameSceneDelegate {
 
     let scene = GameScene()
     var cpuDifficulty: Difficulty = .fair   // active VS COMPUTER opponent strength
+    @Published var selectedCharacter: Rival?   // the chosen famous-face rival (VS COMPUTER)
     private var pendingServe: Slot = .p2
     private var matchStart = Date()
 
@@ -59,12 +60,22 @@ final class GameModel: ObservableObject, GameSceneDelegate {
         DispatchQueue.main.async { Sound.prepare() }
         #if DEBUG
         #if targetEnvironment(simulator)
-        // The Simulator can't run Vision, so preload real cutouts to exercise the
-        // screens visually. On device we start clean to test the real camera flow.
-        if p1Face == nil, let p = Bundle.main.path(forResource: "testface1", ofType: "png") { p1Face = UIImage(contentsOfFile: p) }
-        if p2Face == nil, let p = Bundle.main.path(forResource: "testface2", ofType: "png") { p2Face = UIImage(contentsOfFile: p) }
+        // The Simulator can't run Vision, so preload a bundled cutout as the player's
+        // face to exercise the screens visually. On device we start clean to test the
+        // real camera flow. The opponent face comes from the chosen Character.
+        if p1Face == nil, let url = Bundle.main.url(forResource: "char_player", withExtension: "png") {
+            p1Face = UIImage(contentsOfFile: url.path)
+        }
+        if selectedCharacter == nil { selectedCharacter = .default; p2Face = Rival.default.face }
         syncFaces()
         #endif
+        // QA: FP_NOFACES=1 clears both faces to verify the default robot coin.
+        if ProcessInfo.processInfo.environment["FP_NOFACES"] == "1" { p1Face = nil; p2Face = nil; syncFaces() }
+        // QA: FP_RIVAL=<id> forces a specific rival for the round/play/auto paths.
+        if let rid = ProcessInfo.processInfo.environment["FP_RIVAL"],
+           let r = Rival.roster.first(where: { $0.id == rid }) {
+            selectedCharacter = r; cpuDifficulty = r.difficulty; p2Face = r.face; syncFaces()
+        }
         // Jump to a given screen for visual QA: launch with FP_ROUTE=match|point|…
         if let r = ProcessInfo.processInfo.environment["FP_ROUTE"] {
             score1 = 5; score2 = 3; roundNum = 3; topRally = 85; aces = 2; lastScorer = .p1; liveRally = 12
@@ -73,6 +84,7 @@ final class GameModel: ObservableObject, GameSceneDelegate {
             case "point": score1 = 3; route = .point
             case "share": route = .share
             case "friend": route = .friend
+            case "characters": route = .characters
             case "round": route = .round
             case "play": scene.demo = true; route = .play; score1 = 0; score2 = 0; topRally = 0; liveRally = 0
             case "auto": score1 = 0; score2 = 0; topRally = 0; aces = 0
@@ -105,7 +117,10 @@ final class GameModel: ObservableObject, GameSceneDelegate {
 
     // The opponent (online = the networked rival; offline = the CPU pick).
     var opponentFace: UIImage? { online ? oppFace : p2Face }
-    var opponentName: String { online ? (oppName.isEmpty ? "RIVAL" : oppName) : cpuDifficulty.name }
+    var opponentName: String {
+        if online { return oppName.isEmpty ? "RIVAL" : oppName }
+        return selectedCharacter?.name ?? cpuDifficulty.name
+    }
 
     var elapsed: TimeInterval { Date().timeIntervalSince(matchStart) }
     var elapsedString: String {
@@ -116,10 +131,12 @@ final class GameModel: ObservableObject, GameSceneDelegate {
 
     // MARK: faces
 
+    // The user only ever sets THEIR OWN face (p1). The opponent face (p2) is the chosen
+    // CPU character or the networked rival — never user-uploaded — so only p1 persists.
     func setFace(_ slot: Slot, _ img: UIImage?) {
         if slot == .p1 { p1Face = img } else { p2Face = img }
-        if let img, let d = img.pngData() {
-            UserDefaults.standard.set(d, forKey: slot == .p1 ? "facepong.p1" : "facepong.p2")
+        if slot == .p1, let img, let d = img.pngData() {
+            UserDefaults.standard.set(d, forKey: "facepong.p1")
         }
         syncFaces()
     }
@@ -127,14 +144,19 @@ final class GameModel: ObservableObject, GameSceneDelegate {
     private func loadPersisted() {
         longestRally = UserDefaults.standard.integer(forKey: "facepong.best")
         if let d = UserDefaults.standard.data(forKey: "facepong.p1"), let i = UIImage(data: d) { p1Face = i }
-        if let d = UserDefaults.standard.data(forKey: "facepong.p2"), let i = UIImage(data: d) { p2Face = i }
     }
     private func persistBest() { UserDefaults.standard.set(longestRally, forKey: "facepong.best") }
 
     // MARK: flow
 
-    func startCPU(difficulty: Difficulty = .fair) {
-        cpuDifficulty = difficulty
+    /// Start (or restart) a VS COMPUTER match against a famous-face rival. Passing nil
+    /// reuses the current pick (rematch) or falls back to the default rival.
+    func startCPU(_ character: Rival? = nil) {
+        let rival = character ?? selectedCharacter ?? .default
+        selectedCharacter = rival
+        cpuDifficulty = rival.difficulty
+        online = false
+        p2Face = rival.face          // opponent paddle = the rival's cutout (in-memory, not persisted)
         scene.resetScores()
         score1 = 0; score2 = 0; roundNum = 1; topRally = 0; aces = 0
         matchStart = Date()
