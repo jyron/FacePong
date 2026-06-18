@@ -12,6 +12,7 @@
 //   - purchased/refilled hearts must NOT decay or reset (only the free regen is timed),
 //   - cost-on-loss-only + a visible free wait-path → a nudge, not a cash grab.
 import SwiftUI
+import PostHog
 
 @MainActor
 final class HeartBank: ObservableObject {
@@ -54,6 +55,7 @@ final class HeartBank: ObservableObject {
     func spendOnLoss() {
         guard !unlimited, hearts > 0 else { return }
         hearts -= 1
+        PostHogSDK.shared.capture("heart_spent", properties: ["hearts_remaining": hearts])
         if nextRegen == nil { nextRegen = now.addingTimeInterval(HeartBank.regenMinutes * 60) }
         persist()
     }

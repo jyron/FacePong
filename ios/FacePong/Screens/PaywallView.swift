@@ -4,6 +4,7 @@
 // Both always show "Restore Purchases" (required by App Review) and never use fake
 // urgency. A successful purchase continues straight into the match.
 import SwiftUI
+import PostHog
 
 struct PaywallView: View {
     @ObservedObject var model: GameModel
@@ -39,6 +40,14 @@ struct PaywallView: View {
                 .padding(.horizontal, 22).padding(.bottom, 30)
             }
             if working { Color.black.opacity(0.45).ignoresSafeArea(); ProgressView().tint(.white).scaleEffect(1.4) }
+        }
+        .onAppear {
+            var props: [String: Any] = ["paywall_kind": kind.id]
+            if case .unlock(let rival) = kind {
+                props["rival_id"] = rival.id
+                props["rival_name"] = rival.name
+            }
+            PostHogSDK.shared.capture("paywall_viewed", properties: props)
         }
     }
 

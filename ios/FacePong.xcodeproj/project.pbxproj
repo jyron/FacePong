@@ -74,6 +74,7 @@
 		FE01D22AB37B769B00022D44 /* NeonUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5852FD0423A09B05E2083282 /* NeonUI.swift */; };
 		FF2E913CDACCE0CADF41DC51 /* lose.wav in Resources */ = {isa = PBXBuildFile; fileRef = B4898554CF37373C7C4C8204 /* lose.wav */; };
 		FFC448EF1D1BC274349BE2EA /* OnlineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C84F07C9949B260BA0DEFBA /* OnlineView.swift */; };
+		AA00200000000000AA002000 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = AA00300000000000AA003000 /* PostHog */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -341,6 +342,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = F2391DA27B61118BE4AB8C3D /* Build configuration list for PBXNativeTarget "FacePong" */;
 			buildPhases = (
+				AA00100000000000AA001000 /* Frameworks */,
 				01F1D41477E6D4AA86B38CD0 /* Sources */,
 				B8B3292CF676165B1AE600AC /* Resources */,
 			);
@@ -350,6 +352,7 @@
 			);
 			name = FacePong;
 			packageProductDependencies = (
+				AA00300000000000AA003000 /* PostHog */,
 			);
 			productName = FacePong;
 			productReference = E187F57667DC4C02016C26BA /* FacePong.app */;
@@ -383,6 +386,9 @@
 			productRefGroup = 23C7CECAAC2CAC6A3FFA90A2 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
+			packageReferences = (
+				AA00400000000000AA004000 /* XCRemoteSwiftPackageReference "posthog-ios" */,
+			);
 			targets = (
 				2CBCDD5F8DC4755ED7C74CA8 /* FacePong */,
 			);
@@ -437,6 +443,17 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXFrameworksBuildPhase section */
+		AA00100000000000AA001000 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA00200000000000AA002000 /* PostHog in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		01F1D41477E6D4AA86B38CD0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -475,6 +492,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AA00400000000000AA004000 /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/PostHog/posthog-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.61.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AA00300000000000AA003000 /* PostHog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA00400000000000AA004000 /* XCRemoteSwiftPackageReference "posthog-ios" */;
+			productName = PostHog;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		102AAA4495A18DD1BE20E3AB /* Release */ = {

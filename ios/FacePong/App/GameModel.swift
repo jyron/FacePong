@@ -4,6 +4,7 @@
 import SwiftUI
 import SpriteKit
 import Combine
+import PostHog
 
 enum Route { case start, characters, friend, round, play, point, match, share, online }
 
@@ -185,10 +186,12 @@ final class GameModel: ObservableObject, GameSceneDelegate {
     // The user only ever sets THEIR OWN face (p1). The opponent face (p2) is the chosen
     // CPU character or the networked rival — never user-uploaded — so only p1 persists.
     func setFace(_ slot: Slot, _ img: UIImage?) {
+        let isFirstFace = slot == .p1 && img != nil && p1Face == nil
         if slot == .p1 { p1Face = img } else { p2Face = img }
         if slot == .p1, let img, let d = img.pngData() {
             UserDefaults.standard.set(d, forKey: "facepong.p1")
         }
+        if isFirstFace { PostHogSDK.shared.capture("face_set") }
         syncFaces()
     }
 
@@ -209,6 +212,12 @@ final class GameModel: ObservableObject, GameSceneDelegate {
     /// hearts gates, raising a paywall instead of starting the match when blocked.
     /// Records the target first so a refill/unlock purchase resumes into the RIGHT rival.
     func play(_ rival: Rival) {
+        PostHogSDK.shared.capture("rival_selected", properties: [
+            "rival_id": rival.id,
+            "rival_name": rival.name,
+            "is_locked": !store.isUnlocked(rival),
+            "is_conquered": hasBeaten(rival),
+        ])
         selectedCharacter = rival
         if !store.isUnlocked(rival) { paywall = .unlock(rival); return }
         if rival.premium && !hearts.hasHeart { paywall = .refill; return }
@@ -224,7 +233,7 @@ final class GameModel: ObservableObject, GameSceneDelegate {
     /// Open the always-available hearts & store sheet (from the heart chip on the home /
     /// character-select screens). This is the discoverable entry point for buying hearts and the
     /// all-access bundle — purchases here just apply, they don't start a match.
-    func openStore() { paywall = .store }
+    func openStore() { PostHogSDK.shared.capture("store_opened"); paywall = .store }
 
     /// Called by a paywall after a successful purchase to continue into the match.
     /// Starts directly (the player just paid — don't re-gate them).
@@ -254,6 +263,12 @@ final class GameModel: ObservableObject, GameSceneDelegate {
         score1 = 0; score2 = 0; roundNum = 1; topRally = 0; aces = 0
         matchStart = Date()
         syncFaces()
+        PostHogSDK.shared.capture("match_started", properties: [
+            "rival_id": rival.id,
+            "rival_name": rival.name,
+            "difficulty": rival.difficulty.name,
+            "is_premium": rival.premium,
+        ])
         beginRound(serveTo: .p2)
     }
 
@@ -296,11 +311,29 @@ final class GameModel: ObservableObject, GameSceneDelegate {
             let youWon = p1 >= GC.targetScore
             if !online, let rival = selectedCharacter {
                 if youWon {
-                    justConqueredRival = !beatenRivalIDs.contains(rival.id)
-                    if justConqueredRival { beatenRivalIDs.insert(rival.id); persistBeaten() }
+                    let isNewConquest = !beatenRivalIDs.contains(rival.id)
+                    justConqueredRival = isNewConquest
+                    if justConqueredRival {
+                        beatenRivalIDs.insert(rival.id); persistBeaten()
+                        PostHogSDK.shared.capture("rival_conquered", properties: [
+                            "rival_id": rival.id,
+                            "rival_name": rival.name,
+                            "rivals_beaten_total": beatenRivalIDs.count,
+                        ])
+                    }
                 } else if rival.premium {
                     hearts.spendOnLoss()   // losing to a premium rival burns a heart
                 }
+                PostHogSDK.shared.capture("match_completed", properties: [
+                    "outcome": youWon ? "win" : "loss",
+                    "rival_id": rival.id,
+                    "rival_name": rival.name,
+                    "score_player": p1,
+                    "score_opponent": p2,
+                    "top_rally": topRally,
+                    "aces": aces,
+                    "duration_seconds": Int(elapsed),
+                ])
             }
             youWon ? Sound.fanfare() : Sound.lose()
             route = .match
@@ -324,14 +357,17 @@ final class GameModel: ObservableObject, GameSceneDelegate {
 
     func quickMatch() {
         isHost = false
+        PostHogSDK.shared.capture("online_match_started", properties: ["mode": "quick"])
         beginOnline { c in try await c.joinOrCreate("pong", options: ["code": "", "mode": "quick", "name": self.myName]) }
     }
     func hostFriend() {
         let code = randomCode(); hostCode = code; isHost = true
+        PostHogSDK.shared.capture("online_match_started", properties: ["mode": "friend_host"])
         beginOnline { c in try await c.create("pong", options: ["code": code, "mode": "friend", "name": self.myName]) }
     }
     func joinFriend(_ code: String) {
         isHost = false
+        PostHogSDK.shared.capture("online_match_started", properties: ["mode": "friend_join"])
         beginOnline { c in try await c.join("pong", options: ["code": code.uppercased(), "mode": "friend", "name": self.myName]) }
     }
 

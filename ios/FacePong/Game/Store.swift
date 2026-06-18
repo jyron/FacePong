@@ -13,6 +13,7 @@
 // StoreKit path is unchanged for Xcode-run / TestFlight / production.
 import StoreKit
 import Combine
+import PostHog
 
 @MainActor
 final class Store: ObservableObject {
@@ -107,11 +108,23 @@ final class Store: ObservableObject {
                 guard case .verified(let t) = verification else { return false }
                 await apply(t)
                 await t.finish()
+                PostHogSDK.shared.capture("purchase_completed", properties: ["product_id": id])
                 return true
-            case .pending, .userCancelled: return false
+            case .pending, .userCancelled:
+                PostHogSDK.shared.capture("purchase_failed", properties: [
+                    "product_id": id,
+                    "reason": "cancelled",
+                ])
+                return false
             @unknown default: return false
             }
-        } catch { return false }
+        } catch {
+            PostHogSDK.shared.capture("purchase_failed", properties: [
+                "product_id": id,
+                "reason": "error",
+            ])
+            return false
+        }
     }
 
     func restore() async {

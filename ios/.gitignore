@@ -13,3 +13,4 @@ xcuserdata/
 
 # Compiled helper binary (rebuild from tools/facecutout.swift)
 tools/facecutout
+.env
