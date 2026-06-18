@@ -135,6 +135,17 @@ final class GameModel: ObservableObject, GameSceneDelegate {
                 switch o { case "quick": self?.quickMatch(); case "host": self?.hostFriend(); default: break }
             }
         }
+        // QA: FP_PAYWALL=store|refill|unlock pops a paywall on launch so each can be viewed in the sim.
+        if let pw = ProcessInfo.processInfo.environment["FP_PAYWALL"] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                switch pw {
+                case "store": self?.paywall = .store
+                case "refill": self?.paywall = .refill
+                case "unlock": self?.paywall = .unlock(.default)
+                default: break
+                }
+            }
+        }
         // On-device Vision self-test: run the REAL in-app cutout on a bundled raw
         // photo (Vision runs on device, not simulator) and show it as the paddle.
         if ProcessInfo.processInfo.environment["FP_VISION_TEST"] == "1",
@@ -210,6 +221,11 @@ final class GameModel: ObservableObject, GameSceneDelegate {
         play(r)
     }
 
+    /// Open the always-available hearts & store sheet (from the heart chip on the home /
+    /// character-select screens). This is the discoverable entry point for buying hearts and the
+    /// all-access bundle — purchases here just apply, they don't start a match.
+    func openStore() { paywall = .store }
+
     /// Called by a paywall after a successful purchase to continue into the match.
     /// Starts directly (the player just paid — don't re-gate them).
     func proceedAfterPurchase() {
@@ -218,6 +234,7 @@ final class GameModel: ObservableObject, GameSceneDelegate {
         switch kind {
         case .unlock(let r): startCPU(r)
         case .refill: if let r = selectedCharacter { startCPU(r) }
+        case .store: break   // proactive store: the purchase already applied; stay on the menu
         case .none: break
         }
     }

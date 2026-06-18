@@ -62,11 +62,13 @@ struct Rival: Identifiable, Equatable {
 /// What the paywall sheet is currently selling.
 enum PaywallKind: Identifiable {
     case unlock(Rival)   // tapped a locked rival
-    case refill          // out of hearts, wants to keep trying
+    case refill          // out of hearts mid-match, wants to keep trying
+    case store           // tapped the heart chip — the always-reachable hearts & store sheet
     var id: String {
         switch self {
         case .unlock(let r): return "unlock-\(r.id)"
         case .refill: return "refill"
+        case .store: return "store"
         }
     }
 }

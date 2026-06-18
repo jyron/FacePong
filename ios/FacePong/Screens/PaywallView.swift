@@ -23,6 +23,7 @@ struct PaywallView: View {
                     switch kind {
                     case .unlock(let rival): unlockBody(rival)
                     case .refill: refillBody
+                    case .store: storeBody
                     }
                     Button("Restore Purchases") { run { await store.restore() } }
                         .font(.bodyBold(12)).foregroundStyle(Color(hex: "#6a6496"))
@@ -95,6 +96,39 @@ struct PaywallView: View {
         bestValueButton
     }
 
+    // MARK: hearts & store (always reachable — tapped the heart chip)
+
+    @ViewBuilder private var storeBody: some View {
+        Image(systemName: "heart.fill").font(.system(size: 40))
+            .foregroundStyle(Color(hex: "#ff2e88")).neonGlow(Color(hex: "#ff2e88"), radius: 14).padding(.top, 4)
+        Text("HEARTS").font(.display(26)).foregroundStyle(Color(hex: "#ff2e88"))
+            .neonGlow(Color(hex: "#ff2e88"), radius: 14)
+        if model.hearts.unlimited {
+            Text("∞ UNLIMITED").font(.display(20)).foregroundStyle(Color(hex: "#d4ff3d"))
+                .neonGlow(Color(hex: "#d4ff3d"), radius: 10).padding(.vertical, 2)
+        } else {
+            HeartsRow(remaining: model.hearts.hearts, color: Color(hex: "#ff2e88"), size: 22).padding(.vertical, 2)
+        }
+        Text("Hearts are your tries against the premium rivals — you only lose one when you LOSE to a premium rival. The free rivals never cost a heart, and you earn a free heart every 30 minutes (up to 5).")
+            .font(.body(13)).foregroundStyle(Color(hex: "#a59fce"))
+            .multilineTextAlignment(.center).padding(.horizontal, 22)
+
+        if model.hearts.unlimited {
+            Text("You have the all-access bundle — unlimited hearts, forever.")
+                .font(.bodyBold(12)).foregroundStyle(Color(hex: "#d4ff3d"))
+                .multilineTextAlignment(.center).padding(.horizontal, 24).padding(.top, 6)
+        } else {
+            buyButton(title: "REFILL HEARTS", price: store.displayPrice(Store.heartsRefillID),
+                      productID: Store.heartsRefillID, kind: .lime, sub: "Instantly back to 5 hearts")
+            if let s = model.hearts.secondsToNext {
+                Text("…or wait \(fmt(s)) for your next free heart")
+                    .font(.body(12)).foregroundStyle(Color(hex: "#6a6496")).padding(.top, 2)
+            }
+        }
+
+        bestValueButton
+    }
+
     // The all-access anchor (shown on both paywalls). True 33% saving vs à-la-carte.
     @ViewBuilder private var bestValueButton: some View {
         VStack(spacing: 6) {
@@ -112,7 +146,12 @@ struct PaywallView: View {
             run {
                 let ok = await store.buy(productID)
                 await MainActor.run {
-                    if ok { model.proceedAfterPurchase() } else { failed = true }
+                    if ok {
+                        // The proactive store stays open so the refill / unlock is visibly reflected
+                        // (hearts + entitlements update reactively); the gated paywalls continue
+                        // straight into the match the player was trying to start.
+                        if case .store = self.kind { failed = false } else { model.proceedAfterPurchase() }
+                    } else { failed = true }
                 }
             }
         } label: {

@@ -28,7 +28,7 @@ struct StartView: View {
             faceColumn(.p1)
                 .padding(.vertical, 6)
 
-            HeartChip(hearts: model.hearts)
+            HeartChip(hearts: model.hearts, onTap: { model.openStore() })
 
             VStack(spacing: 14) {
                 NeonButton(title: "VS COMPUTER", kind: .lime) { model.route = .characters }

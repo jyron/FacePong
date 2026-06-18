@@ -46,7 +46,7 @@ struct CharacterSelectView: View {
                         .background(Circle().fill(Color(hex: "#14122a")))
                 }
                 Spacer()
-                HeartChip(hearts: model.hearts)
+                HeartChip(hearts: model.hearts, onTap: { model.openStore() })
             }
         }
         .padding(.horizontal, 18)
@@ -54,10 +54,20 @@ struct CharacterSelectView: View {
     }
 }
 
-/// Compact live hearts indicator (count + regen countdown).
+/// Compact live hearts indicator (count + regen countdown). When `onTap` is set it becomes a
+/// button — with a lime "+" — into the always-available hearts & store sheet (the discoverable
+/// way to buy hearts / unlock everything).
 struct HeartChip: View {
     @ObservedObject var hearts: HeartBank
+    var onTap: (() -> Void)? = nil
     var body: some View {
+        if let onTap {
+            Button(action: onTap) { chip }.buttonStyle(PressDownStyle())
+        } else {
+            chip
+        }
+    }
+    private var chip: some View {
         HStack(spacing: 6) {
             Image(systemName: "heart.fill").font(.system(size: 13, weight: .bold))
                 .foregroundStyle(Color(hex: "#ff2e88")).neonGlow(Color(hex: "#ff2e88"), radius: 5)
@@ -68,6 +78,10 @@ struct HeartChip: View {
                 if !hearts.countdownString.isEmpty {
                     Text(hearts.countdownString).font(.body(10)).foregroundStyle(Color(hex: "#6a6496"))
                 }
+            }
+            if onTap != nil {
+                Image(systemName: "plus.circle.fill").font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Color(hex: "#d4ff3d"))
             }
         }
         .padding(.horizontal, 12).padding(.vertical, 7)
