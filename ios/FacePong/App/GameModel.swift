@@ -117,6 +117,7 @@ final class GameModel: ObservableObject, GameSceneDelegate {
         // Jump to a given screen for visual QA: launch with FP_ROUTE=match|point|…
         if let r = ProcessInfo.processInfo.environment["FP_ROUTE"] {
             score1 = 3; score2 = 1; roundNum = 3; topRally = 85; aces = 2; lastScorer = .p1; liveRally = 12
+            matchStart = Date().addingTimeInterval(-84)   // QA/promo: realistic match TIME stat (1:24) on the match/share screens
             switch r {
             case "match": route = .match; justConqueredRival = true   // show the CONQUERED stamp
             case "matchlose": score1 = 1; score2 = 3; route = .match

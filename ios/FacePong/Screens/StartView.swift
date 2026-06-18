@@ -46,8 +46,10 @@ struct StartView: View {
         .padding(.top, 30)
         .overlay(alignment: .topTrailing) { MuteButton().padding(.trailing, 16).padding(.top, 6) }
         .overlay(alignment: .topLeading) {
-            Text(buildLabel).font(.body(10)).tracking(1).foregroundStyle(Color(hex: "#6a6496"))
-                .padding(.leading, 16).padding(.top, 16)
+            if ProcessInfo.processInfo.environment["FP_PROMO"] != "1" {   // hidden in promo/marketing captures
+                Text(buildLabel).font(.body(10)).tracking(1).foregroundStyle(Color(hex: "#6a6496"))
+                    .padding(.leading, 16).padding(.top, 16)
+            }
         }
         .overlay { if model.processingFace { ProcessingOverlay() } }
         .confirmationDialog("Set your face",

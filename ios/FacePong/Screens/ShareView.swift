@@ -99,7 +99,7 @@ struct VictoryCard: View {
                 Text("·").font(.display(20)).foregroundStyle(Color(hex: "#6a6496"))
                 Text("\(model.score2)").font(.display(26)).foregroundStyle(Color(hex: "#ff2e88"))
             }
-            Text("\(link.uppercased()) · BEST OF 5").font(.body(10)).tracking(1)
+            Text("\(link.uppercased()) · BEST OF \(GC.targetScore)").font(.body(10)).tracking(1)
                 .foregroundStyle(Color(hex: "#6a6496"))
         }
         .padding(20)

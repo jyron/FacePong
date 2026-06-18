@@ -1,15 +1,16 @@
 // Composes App Store marketing screenshots (1320x2868, iPhone 6.9") from the
 // raw simulator captures in ./raw: neon arcade background, headline, and the
 // capture inside a minimal device bezel. Run: node compose.mjs
-import { chromium } from 'playwright';
+import playwright from '/Users/jyron/src/faceslap/appstore/node_modules/playwright/index.js';
+const { chromium } = playwright;
 import { readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
-const fonts = path.join(dir, '..', 'node_modules', '@expo-google-fonts');
-const bungee = path.join(fonts, 'bungee', '400Regular', 'Bungee_400Regular.ttf');
-const grotesk = path.join(fonts, 'space-grotesk', '700Bold', 'SpaceGrotesk_700Bold.ttf');
+const fonts = '/Users/jyron/src/facepong/appstore/fonts';
+const bungee = path.join(fonts, 'Bungee_400Regular.ttf');
+const grotesk = path.join(fonts, 'SpaceGrotesk_700Bold.ttf');
 
 const C = {
   bg: '#07070f',
