@@ -264,7 +264,7 @@ def main():
     # paddle: 5 humanised round-robin variants (fallback only — rally uses the shep frames)
     for s in range(5):
         write_wav('paddle_%d' % s, reverb(pock(f0=300, seed=s)))
-    write_wav('paddle', reverb(pock(f0=300, seed=0)))  # legacy single (fallback / android)
+    write_wav('paddle', reverb(pock(f0=300, seed=0)))  # legacy single (fallback)
 
     # Vibraphone Shepard rally cycle: one reverbed frame per degree (10 = 2 octaves). Shared
     # gain across frames preserves the Shepard constant-loudness (so the climb has no pumping).

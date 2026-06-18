@@ -6,41 +6,38 @@ A retro-arcade neon ping-pong game where **your face is the paddle**. Three mode
 - **Quick Match** — get randomly paired with another waiting player online.
 - **Play a Friend** — create a private game and share the code, or join by code.
 
-iOS and Android play the same live cross-platform match through one hosted
-authoritative game server.
+The native iOS app plays live online matches through one hosted authoritative
+game server.
 
 ## Structure
 
 ```
 facepong/
   ios/         Native iPhone app — Swift + SpriteKit + SwiftUI + Apple Vision.
-               The primary, shipping iOS app (App Store: com.facepong.app).
+               The shipping app (App Store: com.facepong.app).
     FacePong/
       Game/      SpriteKit court, comet trail, ball, FacePaddleNode (warp deform),
-                 deterministic PongEngine (ported from android/shared/engine.ts)
+                 deterministic PongEngine (Swift port of server/src/engine.ts)
       Vision/    FaceCutout (VNGenerateForegroundInstanceMask + face-box head crop
                  + edge feather) and the camera/photo picker
       Net/       Native Colyseus 0.16 client (matchmaking + WebSocket + schema-v3
-                 decode + msgpack) — speaks the same protocol as the Android client
+                 decode + msgpack) — speaks the server's Colyseus protocol
       Screens/   Start, Friend, Round, PlayHUD, Point, Match, Share, Online (SwiftUI)
       UI/Theme/  Neon design system, palette, fonts
     project.yml  xcodegen project spec    tools/sim.sh  build+run+screenshot helper
 
-  android/     Expo (React Native) app — the Android client.
-    shared/      SINGLE SOURCE OF TRUTH: physics engine, geometry constants, and
-                 network protocol. Imported by the Expo app AND bundled into the
-                 server; the iOS engine is a verbatim Swift port of it.
-    src/         game / net / screens / faces / theme
-
   server/      Colyseus authoritative game server (Node + TypeScript).
+    src/engine.ts            ball physics + collisions + scoring (the iOS engine is
+                             a verbatim Swift port of this); constants.ts is geometry
     src/rooms/PongRoom.ts    60Hz authoritative physics, scoring, matchmaking
     src/schema/PongState.ts  synced room state (incl. each player's face cutout)
 
   appstore/    Marketing & store assets — promo video, screenshot sets, generators.
 ```
 
-Every client — iOS native and Android Expo — speaks the **same Colyseus protocol**
-to the same rooms, so an iPhone and an Android phone match and play each other.
+The iOS client and the server share one physics engine (`server/src/engine.ts`,
+ported to Swift on the client), so offline "Vs Computer" and online matches behave
+identically.
 
 ## Running it
 
@@ -55,19 +52,12 @@ Apple Vision's foreground-mask request only runs on real hardware, not the
 simulator — test the camera→cutout flow on a device or via `tools/facecutout.swift`
 on the Mac.
 
-**Android (Expo):**
-```bash
-cd android
-npx expo start                        # press a for Android
-```
-
 **Server:**
 ```bash
 cd server
 npm run dev                           # ws://localhost:2567
 ```
-Point a client at a local server with `FP_SERVER=ws://localhost:2567` (iOS, DEBUG)
-or `android/src/net/config.ts` `SERVER_URL`.
+Point the iOS client at a local server with `FP_SERVER=ws://localhost:2567` (DEBUG).
 
 ## Deployment
 
@@ -78,7 +68,7 @@ or `android/src/net/config.ts` `SERVER_URL`.
 
 ## How the netcode works
 
-- The server runs the **same physics engine** (`android/shared/engine.ts`)
+- The server runs the **same physics engine** (`server/src/engine.ts`)
   authoritatively at 60Hz and patches state to clients at 60Hz.
 - Canonical frame is p1=bottom; a p2 client **flips Y** so each player sees
   themselves at the bottom (cyan), opponent at top (magenta).

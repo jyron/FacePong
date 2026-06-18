@@ -2,7 +2,7 @@
 // setup (1080x1920): a phone mockup of the FacePong pick screen where the player's
 // REAL face becomes the cyan paddle (and, for the couple cut, the opponent's face
 // becomes the magenta paddle) on a mini neon court — proving the real face goes
-// straight into the game. Reuses Playwright + fonts from this repo's android module.
+// straight into the game. Reuses Playwright + fonts committed under appstore/fonts.
 // Usage: node appstore/promo_phone.mjs <out.png> <face1_cutout.png> [face2_cutout.png]
 import playwright from '/Users/jyron/src/faceslap/appstore/node_modules/playwright/index.js';
 const { chromium } = playwright;
@@ -12,9 +12,9 @@ import path from 'path';
 const [, , outPath, face1, face2] = process.argv;
 if (!outPath || !face1) { console.error('usage: promo_phone.mjs <out.png> <face1.png> [face2.png]'); process.exit(1); }
 
-const fonts = '/Users/jyron/src/facepong/android/node_modules/@expo-google-fonts';
-const grotesk = path.join(fonts, 'space-grotesk', '700Bold', 'SpaceGrotesk_700Bold.ttf');
-const bungee = path.join(fonts, 'bungee', '400Regular', 'Bungee_400Regular.ttf');
+const fonts = '/Users/jyron/src/facepong/appstore/fonts';
+const grotesk = path.join(fonts, 'SpaceGrotesk_700Bold.ttf');
+const bungee = path.join(fonts, 'Bungee_400Regular.ttf');
 const b64 = (p) => readFileSync(p).toString('base64');
 const W = 1080, H = 1920;
 const C = { bg: '#0a0918', cyan: '#19e7ff', magenta: '#ff2e88', lime: '#d4ff3d', text: '#a59fce' };

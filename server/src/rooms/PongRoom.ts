@@ -1,11 +1,11 @@
-// Authoritative FacePong room. Runs the SAME physics engine the client uses for
-// CPU play (android/shared/engine.ts) at 60Hz; Colyseus patches state to clients
+// Authoritative FacePong room. Runs the SAME physics engine the iOS app ports for
+// CPU play (src/engine.ts) at 60Hz; Colyseus patches state to clients
 // at its default rate. Canonical frame: p1 = bottom, p2 = top. Each client
 // renders itself at the bottom by flipping Y when it is p2.
 import { Room, Client } from '@colyseus/core';
 import { PongState, Player } from '../schema/PongState';
-import { createEngineState, serve, step, type EngineState } from '../../../android/shared/engine';
-import { COURT, TARGET_SCORE, clampPaddleX, type Slot } from '../../../android/shared/constants';
+import { createEngineState, serve, step, type EngineState } from '../engine';
+import { COURT, TARGET_SCORE, clampPaddleX, type Slot } from '../constants';
 import { track } from '../analytics';
 
 const CX = COURT.W / 2;

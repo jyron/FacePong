@@ -15,9 +15,9 @@ const dir = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(dir, 'promo_video', 'tiktok', 'cards');
 mkdirSync(OUT, { recursive: true });
 
-const fonts = '/Users/jyron/src/facepong/android/node_modules/@expo-google-fonts';
-const bungee = path.join(fonts, 'bungee', '400Regular', 'Bungee_400Regular.ttf');
-const grotesk = path.join(fonts, 'space-grotesk', '700Bold', 'SpaceGrotesk_700Bold.ttf');
+const fonts = '/Users/jyron/src/facepong/appstore/fonts';
+const bungee = path.join(fonts, 'Bungee_400Regular.ttf');
+const grotesk = path.join(fonts, 'SpaceGrotesk_700Bold.ttf');
 const b64 = (p) => readFileSync(p).toString('base64');
 const fontB64 = (p) => `data:font/ttf;base64,${b64(p)}`;
 const raw = (id) => path.join(dir, 'characters', 'raw', `${id}.png`);

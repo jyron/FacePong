@@ -11,9 +11,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
-const fonts = '/Users/jyron/src/facepong/android/node_modules/@expo-google-fonts';
-const bungee = path.join(fonts, 'bungee', '400Regular', 'Bungee_400Regular.ttf');
-const grotesk = path.join(fonts, 'space-grotesk', '700Bold', 'SpaceGrotesk_700Bold.ttf');
+const fonts = '/Users/jyron/src/facepong/appstore/fonts';
+const bungee = path.join(fonts, 'Bungee_400Regular.ttf');
+const grotesk = path.join(fonts, 'SpaceGrotesk_700Bold.ttf');
 const fontB64 = (p) => `data:font/ttf;base64,${readFileSync(p).toString('base64')}`;
 
 const W = 1080, H = 1920;

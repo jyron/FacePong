@@ -1,7 +1,6 @@
-// Authoritative Colyseus state. Field names mirror NetStateShape /
-// NetPlayerShape in the shared protocol (android/shared/protocol.ts) so the
-// client reads them by the same names. Uses defineTypes (functional API) to
-// avoid decorator build configuration.
+// Authoritative Colyseus state. Field names mirror the NetState / NetPlayer
+// shapes the iOS client decodes, so it reads them by the same names. Uses
+// defineTypes (functional API) to avoid decorator build configuration.
 import { Schema, MapSchema, defineTypes } from '@colyseus/schema';
 
 export class Player extends Schema {
