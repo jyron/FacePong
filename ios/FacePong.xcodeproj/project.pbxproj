@@ -49,6 +49,7 @@
 		9AA2F73C90578BA6A82AE572 /* char_player.png in Resources */ = {isa = PBXBuildFile; fileRef = 0A334B2B4D0B8EF8B74681FB /* char_player.png */; };
 		A0FF656C9F761B94601D179B /* shep_9.wav in Resources */ = {isa = PBXBuildFile; fileRef = 577BE9CFD14936F72EEA0F75 /* shep_9.wav */; };
 		A883374B996D1F2E723E4A27 /* FacePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FBA325EA35CA68CBCE738CB /* FacePicker.swift */; };
+		AADF12C552376B4A6DB76489 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = A8F42449150B65E0EE987921 /* PostHog */; };
 		AB37191D497BB8F9C51C5F0C /* char_president.png in Resources */ = {isa = PBXBuildFile; fileRef = 29D130D67C222C6DBF35B1C2 /* char_president.png */; };
 		ADE3411DDA9FF2CD59EB36B0 /* fanfare.wav in Resources */ = {isa = PBXBuildFile; fileRef = 725381422B2540B0D775874D /* fanfare.wav */; };
 		AEBDD9F7B1413CA6AF4F7F5E /* paddle_2.wav in Resources */ = {isa = PBXBuildFile; fileRef = 2C2FDD640D2752D168467151 /* paddle_2.wav */; };
@@ -146,6 +147,17 @@
 		F9B54FCB5619AC0B6B71A037 /* char_chairman.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_chairman.png; sourceTree = "<group>"; };
 		FBABD8FA277E6B071E89B02D /* score.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = score.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AD2AB4EA177D53E4354E42CD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AADF12C552376B4A6DB76489 /* PostHog in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		23C7CECAAC2CAC6A3FFA90A2 /* Products */ = {
@@ -343,6 +355,7 @@
 			buildPhases = (
 				01F1D41477E6D4AA86B38CD0 /* Sources */,
 				B8B3292CF676165B1AE600AC /* Resources */,
+				AD2AB4EA177D53E4354E42CD /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -350,6 +363,7 @@
 			);
 			name = FacePong;
 			packageProductDependencies = (
+				A8F42449150B65E0EE987921 /* PostHog */,
 			);
 			productName = FacePong;
 			productReference = E187F57667DC4C02016C26BA /* FacePong.app */;
@@ -379,6 +393,9 @@
 			);
 			mainGroup = E67DB685A9B95DCABB5CA77E;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				BB8C2F2ACB0946D0AB7B99A7 /* XCRemoteSwiftPackageReference "posthog-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 23C7CECAAC2CAC6A3FFA90A2 /* Products */;
 			projectDirPath = "";
@@ -666,6 +683,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		BB8C2F2ACB0946D0AB7B99A7 /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/PostHog/posthog-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.61.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A8F42449150B65E0EE987921 /* PostHog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BB8C2F2ACB0946D0AB7B99A7 /* XCRemoteSwiftPackageReference "posthog-ios" */;
+			productName = PostHog;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 9205C6809B474EE3553EAAD8 /* Project object */;
 }

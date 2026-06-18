@@ -13,11 +13,18 @@ settings:
     CURRENT_PROJECT_VERSION: "27"
     TARGETED_DEVICE_FAMILY: "1"
     CODE_SIGN_STYLE: Automatic
+packages:
+  PostHog:
+    url: https://github.com/PostHog/posthog-ios
+    from: 3.61.0
 targets:
   FacePong:
     type: application
     platform: iOS
     deploymentTarget: "17.0"
+    dependencies:
+      - package: PostHog
+        product: PostHog
     sources:
       - path: FacePong
         excludes:
