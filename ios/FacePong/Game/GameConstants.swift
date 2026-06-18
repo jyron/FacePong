@@ -31,13 +31,11 @@ enum GC {
     static let serveVXSpread: CGFloat = 2.4  // random horizontal spread on serve
     static let paddleBounce: CGFloat = 5.2   // how much paddle hit offset bends vx
 
-    // HEARTS: each player starts with this many hearts; you lose one each time you
-    // concede a point, and the first to zero hearts loses. Mechanically identical to
-    // "first to startingHearts points", but the HUD shows it as draining hearts so the
-    // match state is legible at a glance. targetScore is kept as the win threshold the
-    // engine checks (you reach it = the opponent's last heart pops).
-    static let startingHearts = 5
-    static let targetScore = startingHearts  // reaching this many points drains the rival to 0 hearts
+    // MATCH LENGTH: first to `targetScore` points wins the match — a short best-of-3-style
+    // match. The in-match HUD shows this as filling ScorePips, NOT hearts. Hearts are the
+    // SEPARATE global lives currency (see HeartBank): you lose one per match LOSS, never tied
+    // to the in-match score.
+    static let targetScore = 3
     static let countdownFrom = 3
 
     static let tickHz: Double = 60
@@ -88,7 +86,7 @@ struct Difficulty {
     // gentler tracking and a real (but not huge) aim error — not via being helpless.
     static let tiers: [Difficulty] = [
         //         name           reactTk  track  trackAway  predict  aimErr  cover  spdMul  rampMul  svYMul  svXMul
-        .init(name: "WARM-UP",      reactionTicks: 9,  trackGain: 0.075, trackGainAway: 0.030, predict: 0.10, aimErrorUnits: 16, coverage: 0.90, maxSpeedMul: 0.78, rampMul: 0.90, serveVYMul: 0.85, serveVXSpreadMul: 0.80),
+        .init(name: "WARM-UP",      reactionTicks: 7,  trackGain: 0.100, trackGainAway: 0.038, predict: 0.26, aimErrorUnits: 10, coverage: 0.95, maxSpeedMul: 0.88, rampMul: 0.96, serveVYMul: 0.90, serveVXSpreadMul: 0.90),
         .init(name: "ROOKIE",       reactionTicks: 8,  trackGain: 0.090, trackGainAway: 0.034, predict: 0.18, aimErrorUnits: 13, coverage: 0.93, maxSpeedMul: 0.84, rampMul: 0.94, serveVYMul: 0.88, serveVXSpreadMul: 0.88),
         .init(name: "REGULAR",      reactionTicks: 7,  trackGain: 0.105, trackGainAway: 0.040, predict: 0.28, aimErrorUnits: 10, coverage: 0.96, maxSpeedMul: 0.90, rampMul: 0.98, serveVYMul: 0.90, serveVXSpreadMul: 0.95),
         .init(name: "SHARP",        reactionTicks: 6,  trackGain: 0.120, trackGainAway: 0.045, predict: 0.40, aimErrorUnits: 8,  coverage: 0.99, maxSpeedMul: 0.96, rampMul: 1.02, serveVYMul: 0.93, serveVXSpreadMul: 1.02),

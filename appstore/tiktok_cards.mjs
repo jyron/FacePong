@@ -240,6 +240,7 @@ const BRACKET_IDS = ['president', 'chairman', 'dictator', 'tycoon', 'king', 'wre
 const jobs = [
   // V1 WAR
   { name: 'war_faceoff', html: faceoff('dictator', 'president', 'two world leaders<br>settled it with PONG 😭'), t: false },
+  { name: 'tycoon_singer_faceoff', html: faceoff('tycoon', 'singer', 'the tycoon vs<br>the pop princess'), t: false },
   { name: 'war_cap_reveal', html: caption(['wait those are', 'the <span class="hl">paddles</span> 💀'], { top: 1320 }), t: true },
   { name: 'war_cap_money', html: caption(['<span class="hot">RIGHT</span> in the face 😭'], { top: 1180, size: 64 }), t: true },
   { name: 'war_cap_final', html: caption(['no negotiations'], { top: 1320 }), t: true },

@@ -116,11 +116,11 @@ final class GameModel: ObservableObject, GameSceneDelegate {
         }
         // Jump to a given screen for visual QA: launch with FP_ROUTE=match|point|…
         if let r = ProcessInfo.processInfo.environment["FP_ROUTE"] {
-            score1 = 5; score2 = 3; roundNum = 3; topRally = 85; aces = 2; lastScorer = .p1; liveRally = 12
+            score1 = 3; score2 = 1; roundNum = 3; topRally = 85; aces = 2; lastScorer = .p1; liveRally = 12
             switch r {
             case "match": route = .match; justConqueredRival = true   // show the CONQUERED stamp
-            case "matchlose": score1 = 3; score2 = 5; route = .match
-            case "point": score1 = 3; route = .point
+            case "matchlose": score1 = 1; score2 = 3; route = .match
+            case "point": score1 = 2; route = .point
             case "share": route = .share
             case "friend": route = .friend
             case "characters": route = .characters
@@ -321,8 +321,8 @@ final class GameModel: ObservableObject, GameSceneDelegate {
                             "rivals_beaten_total": beatenRivalIDs.count,
                         ])
                     }
-                } else if rival.premium {
-                    hearts.spendOnLoss()   // losing to a premium rival burns a heart
+                } else {
+                    hearts.spendOnLoss()   // losing ANY match burns a global heart, regardless of rival
                 }
                 PostHogSDK.shared.capture("match_completed", properties: [
                     "outcome": youWon ? "win" : "loss",

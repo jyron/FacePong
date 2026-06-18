@@ -113,11 +113,12 @@ struct NeonPill: View {
 
 // MARK: hearts
 
-/// A row of heart pips showing a player's remaining hearts (filled) out of the total
-/// (dim outlines). The match's live state at a glance — drains one per conceded point.
+/// A row of heart pips showing the player's remaining global lives (filled) out of the
+/// max (dim outlines). These are the HeartBank "tries" — you lose one per match LOSS,
+/// against any rival. Distinct from ScorePips, which is the in-match points-to-win.
 struct HeartsRow: View {
     var remaining: Int
-    var total: Int = GC.startingHearts
+    var total: Int = HeartBank.maxHearts
     var color: Color
     var size: CGFloat = 15
 

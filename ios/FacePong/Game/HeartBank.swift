@@ -1,13 +1,13 @@
 // HeartBank.swift — the global HEARTS energy economy (the soft monetization lever).
 //
-// Hearts are your "tries" against the tough rivals. You START with a full pool and:
-//   • lose 1 heart ONLY when you LOSE a match to a PREMIUM rival (never on a win,
-//     never just for playing, never against the free rivals),
+// Hearts are your "tries". You START with a full pool of 5 and:
+//   • lose 1 heart whenever you LOSE a whole match — against ANY rival, free or premium
+//     (never on a win, never just for playing),
 //   • regenerate 1 free heart every `regenMinutes` (wall-clock),
 //   • can instantly refill via the $0.99 IAP, or
 //   • never run out at all once "Unlock All" grants `unlimited`.
 //
-// Design guardrails (from the monetization research, to stay fun + Apple-safe):
+// Design guardrails (to stay fun + Apple-safe):
 //   - free rivals are ALWAYS playable even at 0 hearts → the core loop is never walled,
 //   - purchased/refilled hearts must NOT decay or reset (only the free regen is timed),
 //   - cost-on-loss-only + a visible free wait-path → a nudge, not a cash grab.
@@ -51,7 +51,7 @@ final class HeartBank: ObservableObject {
         return String(format: "%d:%02d", m, sec)
     }
 
-    /// Spend a heart after losing a match to a premium rival.
+    /// Spend a heart after losing any match (against any rival).
     func spendOnLoss() {
         guard !unlimited, hearts > 0 else { return }
         hearts -= 1
